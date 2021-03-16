@@ -27,7 +27,7 @@ uint8_t animateLed(uint8_t FreqRespiracao){
 		countLeds = 0;						//Reinicia o contador
 	}
 			
-	_delay_ms(60000/(FreqRespiracao*16));	//Espera 1/16 do período de oscilação atual
+	myDelay(60000/(FreqRespiracao*16));	//Espera 1/16 do período de oscilação atual
 	return result;
 	
 }

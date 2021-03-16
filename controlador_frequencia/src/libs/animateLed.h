@@ -9,12 +9,12 @@
 #ifndef ANIMATELED_H_
 #define ANIMATELED_H_
 
+#ifndef F_CPU								//Prevenção caso tenha sido definido em outro arquivo ou em linha de comando
 #define F_CPU 16000000UL					//Definição do clock da CPU
-#define __DELAY_BACKWARD_COMPATIBLE__		//Habilita que variáveis sejam passadas para _delay_ms()
-
+#endif
 
 #include <avr/io.h>
-#include <util/delay.h>
+#include "myDelay.h"
 
 
 uint8_t animateLed(uint8_t FreqRespiracao);	//Protótipo da função
