@@ -213,61 +213,66 @@ void nokia_lcd_render(void)
 
 void nokia_lcd_plot(uint8_t id){
 	
-	register uint8_t i;
-	char id_str[3];
-	static uint8_t x_fifo[71] = {0};
+	register uint8_t i;						//Auxiliar counter
+	char id_str[3];							//Str that will be passed to nokia_lcd_write_string()
+	static uint8_t x_fifo[71] = {0};		//Fifo to store data collected through time
 
 	
-	//Inicialização de parte estática do gráfico
+	//Static part of image
 
 	nokia_lcd_clear();
 
 
-	for(i = 83; i >= 12; i--){
+	for(i = 83; i >= 12; i--){				//Draw x axis
 		nokia_lcd_set_pixel(i, 38, 1);
 	}
-		for(i = 37; i >= 6; i--){
+		for(i = 37; i >= 6; i--){			//Draw y axis
 		nokia_lcd_set_pixel(12, i, 1);
 	}
 
 	nokia_lcd_set_cursor(0, 0);
-	nokia_lcd_write_string("30",1);
+	nokia_lcd_write_string("30",1);			//Set maximum value
 	nokia_lcd_set_cursor(6, 30);
-	nokia_lcd_write_string("0",1);
+	nokia_lcd_write_string("0",1);			//Set minimum value
 
-	//Parte dinâmica do gráfico
-	itoa(id, id_str, 10);
+	//Dynamic part of image
+	itoa(id, id_str, 10);					//Convert integer value to string
 
-	if(id < 10){
+	if(id < 10){							//Padds with 0 if id has only 1 digit
    		nokia_lcd_set_cursor(10, 40);
    		nokia_lcd_write_string("0", 1);
 		nokia_lcd_set_cursor(16,40);
     }else
-    	nokia_lcd_set_cursor(10, 40);
+    	nokia_lcd_set_cursor(10, 40);		//Else, just drawn id value on screen
 	
-	nokia_lcd_write_string(id_str,1);
-	nokia_lcd_write_string(" resp/min", 1);
+	nokia_lcd_write_string(id_str,1);		
+	nokia_lcd_write_string(" resp/min", 1);	//Draws units of the id
 
-	shift_array(x_fifo, id);
+	shift_array(x_fifo, id);				//Updates fifo
 
 	for(i = 83; i >= 13; i--){
-		nokia_lcd_set_pixel(i, 38 - x_fifo[i - 13], 1);		
+		nokia_lcd_set_pixel(i, 38 - x_fifo[i - 13], 1); //Updates the cartesian plane with fifo values		
 	}
 
 }
 
+/*
+ *MSI = Most significant index
+ *LSI = Less significant index
+ */
+
 void shift_array(uint8_t* array, uint8_t value){
 
-	static uint8_t i;
-	register uint8_t it;
+	static uint8_t i;					//Used to initializate fifo if the fifo is incomplete
+	register uint8_t it;				//Used to update fifo after its full
 
-	if(array[70] == 0){
-		array[i++] = value;
-	}else{
-		for(it = 0; it <= 69; it++){
-			array[it] = array[it + 1	];
+	if(array[70] == 0){					//If fifo is not full
+		array[i++] = value;				//Attributes value to first empty element of fifo
+	}else{								
+		for(it = 0; it <= 69; it++){	
+			array[it] = array[it + 1];	//Removes first element, fifo shifted to right (MSI -> LSI)
 		}
-		array[70] = value;
+		array[70] = value;				//Last element = value
 	}
 
 }

@@ -93,8 +93,13 @@ void nokia_lcd_render(void);
  * Modified by João Pedro M. Gomes aka JoaoPi314
  */
 
-
+/*
+ * Shows actual frequency and plot fxt graphic
+ */
 void nokia_lcd_plot(uint8_t id);
+/*
+ * Auxiliar function to update fifo that controls plot
+ */
 void shift_array(uint8_t* array, uint8_t value);
 
 #endif

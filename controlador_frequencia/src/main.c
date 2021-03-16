@@ -8,7 +8,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "libs/animateLed.h"
-#include "libs/mascaras.h"
 #include "libs/nokia5110.h"
 
 
@@ -32,8 +31,8 @@ int main(void)
 {
 
 	//LCD inits
-	nokia_lcd_init();
-	nokia_lcd_clear();
+	nokia_lcd_init();					//Inicia o display LCD
+	nokia_lcd_clear();					//Limpa a tela inicialmente
 
 	//GPIO
 	//Definição de direção das portas
@@ -49,17 +48,15 @@ int main(void)
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
 
 	
-	//Variáveis locais
-	char Freq_str[3];
 
     while (1) 
     {
   		
-  		nokia_lcd_plot(FreqRespiracao);
-		nokia_lcd_render();
+  		nokia_lcd_plot(FreqRespiracao);		//Plota o gráfico da frequência x tempo e indica a frequência atual
+		nokia_lcd_render();					//Renderiza a imagem no LCD
 
 		//Atribuiçãoo da configuração de LEDS à porta B
-		PORTB = animateLed(FreqRespiracao);
+		PORTB = animateLed(FreqRespiracao);	
 		
     }
 }

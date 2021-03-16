@@ -1,3 +1,10 @@
+/*---------------------------------------------------------------------	*
+ * Arquivo: mascaras.h													*
+ * Criador: João Pedro Melquiades Gomes      Mat: 118110077				*
+ * Descrição: Arquivo com máscara de bits mais utilizadas				*
+ *---------------------------------------------------------------------	*/
+
+
 #ifndef MASCARAS_H
 #define MASCARAS_H
 
