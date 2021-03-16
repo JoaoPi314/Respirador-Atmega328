@@ -211,10 +211,11 @@ void nokia_lcd_render(void)
  */
 
 
-void nokia_lcd_plot(uint8_t id){
+void nokia_lcd_plot(uint8_t id, char* units, uint8_t max){
 	
 	register uint8_t i;						//Auxiliar counter
 	char id_str[3];							//Str that will be passed to nokia_lcd_write_string()
+	char max_str[3];						//Str that will be passed to max value of graphic
 	static uint8_t x_fifo[71] = {0};		//Fifo to store data collected through time
 
 	
@@ -231,7 +232,8 @@ void nokia_lcd_plot(uint8_t id){
 	}
 
 	nokia_lcd_set_cursor(0, 0);
-	nokia_lcd_write_string("30",1);			//Set maximum value
+	itoa(max, max_str, 10);
+	nokia_lcd_write_string(max_str,1);			//Set maximum value
 	nokia_lcd_set_cursor(6, 30);
 	nokia_lcd_write_string("0",1);			//Set minimum value
 
@@ -246,7 +248,7 @@ void nokia_lcd_plot(uint8_t id){
     	nokia_lcd_set_cursor(10, 40);		//Else, just drawn id value on screen
 	
 	nokia_lcd_write_string(id_str,1);		
-	nokia_lcd_write_string(" resp/min", 1);	//Draws units of the id
+	nokia_lcd_write_string(units, 1);	//Draws units of the id
 
 	shift_array(x_fifo, id);				//Updates fifo
 

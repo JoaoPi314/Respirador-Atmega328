@@ -96,7 +96,7 @@ void nokia_lcd_render(void);
 /*
  * Shows actual frequency and plot fxt graphic
  */
-void nokia_lcd_plot(uint8_t id);
+void nokia_lcd_plot(uint8_t id, char* units, uint8_t max);
 /*
  * Auxiliar function to update fifo that controls plot
  */

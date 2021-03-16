@@ -52,7 +52,7 @@ int main(void)
     while (1) 
     {
   		
-  		nokia_lcd_plot(FreqRespiracao);		//Plota o gráfico da frequência x tempo e indica a frequência atual
+  		nokia_lcd_plot(FreqRespiracao, "resp/min", 30);		//Plota o gráfico da frequência x tempo e indica a frequência atual
 		nokia_lcd_render();					//Renderiza a imagem no LCD
 
 		//Atribuiçãoo da configuração de LEDS à porta B
