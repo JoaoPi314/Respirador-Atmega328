@@ -16,6 +16,7 @@
 
 #include <avr/pgmspace.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /*
  * LCD's port
@@ -85,5 +86,15 @@ void nokia_lcd_set_cursor(uint8_t x, uint8_t y);
  */
 void nokia_lcd_render(void);
 
+
+//-------------------------------------------------------------------------------------------------------------------------
+
+/*
+ * Modified by João Pedro M. Gomes aka JoaoPi314
+ */
+
+
+void nokia_lcd_plot(uint8_t id);
+void shift_array(uint8_t* array, uint8_t value);
 
 #endif

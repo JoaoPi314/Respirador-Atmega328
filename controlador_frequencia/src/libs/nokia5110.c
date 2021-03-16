@@ -201,3 +201,73 @@ void nokia_lcd_render(void)
 	for (i = 0; i < 504; i++)
 		write_data(nokia_lcd.screen[i]);
 }
+
+
+
+//-------------------------------------------------------------------------------------------------------------------------
+
+/*
+ * Modified by João Pedro M. Gomes aka JoaoPi314
+ */
+
+
+void nokia_lcd_plot(uint8_t id){
+	
+	register uint8_t i;
+	char id_str[3];
+	static uint8_t x_fifo[71] = {0};
+
+	
+	//Inicialização de parte estática do gráfico
+
+	nokia_lcd_clear();
+
+
+	for(i = 83; i >= 12; i--){
+		nokia_lcd_set_pixel(i, 38, 1);
+	}
+		for(i = 37; i >= 6; i--){
+		nokia_lcd_set_pixel(12, i, 1);
+	}
+
+	nokia_lcd_set_cursor(0, 0);
+	nokia_lcd_write_string("30",1);
+	nokia_lcd_set_cursor(6, 30);
+	nokia_lcd_write_string("0",1);
+
+	//Parte dinâmica do gráfico
+	itoa(id, id_str, 10);
+
+	if(id < 10){
+   		nokia_lcd_set_cursor(10, 40);
+   		nokia_lcd_write_string("0", 1);
+		nokia_lcd_set_cursor(16,40);
+    }else
+    	nokia_lcd_set_cursor(10, 40);
+	
+	nokia_lcd_write_string(id_str,1);
+	nokia_lcd_write_string(" resp/min", 1);
+
+	shift_array(x_fifo, id);
+
+	for(i = 83; i >= 13; i--){
+		nokia_lcd_set_pixel(i, 38 - x_fifo[i - 13], 1);		
+	}
+
+}
+
+void shift_array(uint8_t* array, uint8_t value){
+
+	static uint8_t i;
+	register uint8_t it;
+
+	if(array[70] == 0){
+		array[i++] = value;
+	}else{
+		for(it = 0; it <= 69; it++){
+			array[it] = array[it + 1	];
+		}
+		array[70] = value;
+	}
+
+}

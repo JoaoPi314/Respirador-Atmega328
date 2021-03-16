@@ -34,8 +34,6 @@ int main(void)
 	//LCD inits
 	nokia_lcd_init();
 	nokia_lcd_clear();
-	nokia_lcd_set_cursor(35,20);
-	nokia_lcd_write_string("resp/min", 1);
 
 	//GPIO
 	//Definição de direção das portas
@@ -56,16 +54,8 @@ int main(void)
 
     while (1) 
     {
-    	itoa(FreqRespiracao, Freq_str, 10);
-    	//sprintf(Freq_str, "%02d", FreqRespiracao);
-    	if(FreqRespiracao < 10){
-    		nokia_lcd_set_cursor(0, 10);
-    		nokia_lcd_write_string("0", 3);
-			nokia_lcd_set_cursor(16,10);
-    	}
-		else
-			nokia_lcd_set_cursor(0, 10);
-		nokia_lcd_write_string(Freq_str, 3);
+  		
+  		nokia_lcd_plot(FreqRespiracao);
 		nokia_lcd_render();
 
 		//Atribuiçãoo da configuração de LEDS à porta B
