@@ -14,34 +14,30 @@
  */
 
 void changeDisplayConfig(uint8_t sel, uint8_t freq){
-
+    
     nokia_lcd_clear();
+    nokia_lcd_plot(freq, "resp/min", 30);           //sempre chama a função de plot para atualizar o gráfico mesmo quando nã ofor mostrado
 
-    switch(sel){
-
+    if(!sel){                                       //Caso sel seja 0, plota o display simples
+        nokia_lcd_clear();
         char freq_str[3];
+        
+        nokia_lcd_set_cursor(35,14);
+        nokia_lcd_write_string("resp/min", 1);      //Escreve as unidades em (35,14)
+        
+        itoa(freq, freq_str, 10);                   //Converte a frequência para string
+        
+        
+        if(freq < 10){                              //Padding de 0 caso a frequência seja menor que 10
+            nokia_lcd_set_cursor(0, 0);
+            nokia_lcd_write_string("0", 3);
+            nokia_lcd_set_cursor(16,0);
+        }
+        else
+            nokia_lcd_set_cursor(0, 0);
+        
+        nokia_lcd_write_string(freq_str, 3);        //Escreve a frequência em (0,0)
 
-        case 0:
-            nokia_lcd_plot(freq, "resp/min", 30);
-            break;
-        default:
-	        nokia_lcd_set_cursor(35,14);
-            nokia_lcd_write_string("resp/min", 1);
-            
-            itoa(freq, freq_str, 10);
-    	    
-            
-    	    if(freq < 10){
-    		    nokia_lcd_set_cursor(0, 0);
-    		    nokia_lcd_write_string("0", 3);
-			    nokia_lcd_set_cursor(16,0);
-        	}
-		    else
-			    nokia_lcd_set_cursor(0, 0);
-		    
-            nokia_lcd_write_string(freq_str, 3);
-
-            break;
     }
 
     nokia_lcd_render();
