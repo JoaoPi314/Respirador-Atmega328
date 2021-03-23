@@ -1,22 +1,23 @@
 /*---------------------------------------------------------------------	*
  * Arquivo: animateLed.h												*
- * Criador: João Pedro Melquiades Gomes      Mat: 118110077				*
- * Descrição: Arquivo com o protótipo da função que anima a barra de	*
- * led, definição de constantes e inclusão das bibliotecas necessárias	*
+ * Criador: JoÃ£o Pedro Melquiades Gomes      Mat: 118110077				*
+ * DescriÃ§Ã£o: Arquivo com o protÃ³tipo da funÃ§Ã£o que anima a barra de	*
+ * led, definiÃ§Ã£o de constantes e inclusÃ£o das bibliotecas necessÃ¡rias	*
  *---------------------------------------------------------------------	*/
 
 
 #ifndef ANIMATELED_H_
 #define ANIMATELED_H_
 
-#ifndef F_CPU								//Prevenção caso tenha sido definido em outro arquivo ou em linha de comando
-#define F_CPU 16000000UL					//Definição do clock da CPU
+#ifndef F_CPU								//PrevenÃ§Ã£o caso tenha sido definido em outro arquivo ou em linha de comando
+#define F_CPU 16000000UL					//DefiniÃ§Ã£o do clock da CPU
 #endif
 
+#include <avr/pgmspace.h>
 #include <avr/io.h>
-#include "myDelay.h"
 
 
-uint8_t animateLed(uint8_t FreqRespiracao);	//Protótipo da função
+
+uint8_t animateLed(uint8_t FreqRespiracao);	//Protï¿½tipo da funÃ§Ã£o
 
 #endif /* ANIMATELED_H_ */
