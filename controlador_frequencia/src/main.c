@@ -8,7 +8,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "libs/animateLed.h"
-#include "libs/nokia5110.h"
+#include "libs/nokiaDisplay.h"
 
 
 //Variável estática só válida dentro desse arquivo
@@ -52,9 +52,8 @@ int main(void)
     while (1) 
     {
   		
-  		nokia_lcd_plot(FreqRespiracao, "resp/min", 30);		//Plota o gráfico da frequência x tempo e indica a frequência atual
-		nokia_lcd_render();					//Renderiza a imagem no LCD
-
+  		changeDisplayConfig(1, FreqRespiracao);//Plota o gráfico da frequência x tempo e indica a frequência atual
+		
 		//Atribuiçãoo da configuração de LEDS à porta B
 		PORTB = animateLed(FreqRespiracao);	
 		
