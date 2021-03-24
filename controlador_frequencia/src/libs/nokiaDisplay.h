@@ -14,6 +14,6 @@
 
 
 
-void changeDisplayConfig(uint8_t sel, uint8_t freq);
+void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card);
 
 #endif
