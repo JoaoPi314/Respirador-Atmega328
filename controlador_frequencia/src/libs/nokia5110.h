@@ -18,6 +18,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
+
+
 /*
  * LCD's port
  */

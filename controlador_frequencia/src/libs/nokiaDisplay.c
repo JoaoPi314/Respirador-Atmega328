@@ -19,14 +19,14 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card){
     nokia_lcd_plot(freq, "resp/min", 30);           //sempre chama a função de plot para atualizar o gráfico mesmo quando nã ofor mostrado
 
     if(!sel){                                       //Caso sel seja 0, plota o display simples
-        nokia_lcd_clear();
-        char freq_str[3];
-        char card_srt[6];
+        nokia_lcd_clear();  
+        char freq_str[3];                           //Variável auxiliar para armazenar FreqRespiracao em string
+        char card_srt[4];                           //Variável auxiliar para armazenar FreqCardiaca em string
         
         nokia_lcd_set_cursor(35,14);
         nokia_lcd_write_string("resp/min", 1);      //Escreve as unidades em (35,14)
         nokia_lcd_set_cursor(35, 34);
-        nokia_lcd_write_string("bpm", 1);
+        nokia_lcd_write_string("bpm", 1);           //Escreve as unidades bpm em (35,34)
 
 
         itoa(freq, freq_str, 10);                   //Converte a frequência para string
@@ -41,10 +41,14 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card){
             nokia_lcd_set_cursor(0, 0);
         
         nokia_lcd_write_string(freq_str, 3);        //Escreve a frequência em (0,0)
+        
         nokia_lcd_set_cursor(0, 30);                
-        itoa(card, card_srt, 10);                   
-        nokia_lcd_write_string(card_srt, 2);        
 
+        if(card){                                   //Caso card diferente de 0, mostra o valor no LCD
+            itoa(card, card_srt, 10);               
+            nokia_lcd_write_string(card_srt, 2);        
+        }else                                       //Caso contrário, mostra ---
+            nokia_lcd_write_string("---", 2);
 
     }
 
