@@ -33,7 +33,7 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
         nokia_lcd_set_cursor(35, 12);
         nokia_lcd_write_string("bpm", 1);
         nokia_lcd_set_cursor(35, 24);
-        nokia_lcd_write_string("°C", 1);
+        nokia_lcd_write_string("oC", 1);
         nokia_lcd_set_cursor(35, 36);
         nokia_lcd_write_string("\%SpO2", 1);
 
@@ -47,7 +47,6 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
         if(freq < 10){                              //Padding de 0 caso a frequência seja menor que 10
             nokia_lcd_set_cursor(0, 0);
             nokia_lcd_write_string("0", 1);
-            nokia_lcd_set_cursor(16,0);
         }
         else
             nokia_lcd_set_cursor(0, 0);

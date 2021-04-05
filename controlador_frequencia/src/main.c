@@ -126,16 +126,16 @@ ISR(ADC_vect){
 	clr_bit(ADCSRA, 5);
 	clr_bit(ADCSRA, 3);
 	//ADCSRA = 0b00000000;
-	cpl_bit(PORTD, 0);
-
+	//cpl_bit(PORTD, 0);			//Para debug da frequência que a interrupção é gerada (1/300m)Hz
 	if(tst_bit(ADMUX, 0))
 		saturacaoO2 = 0.123*ADC;
 	else
 		temper = (ADC + 205	)/20.46;
 
-	if(saturacaoO2 > 60 || temper < 35 || temper > 41)
-		if(!(tempo_ms % 200))
+	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){
+		if(!(tempo_ms % 300))
 			cpl_bit(PORTD, 5);
+	}
 	else
 		clr_bit(PORTD, 5);
 
