@@ -12,15 +12,19 @@
 
 //Variável estática só válida dentro desse arquivo
 static volatile uint8_t FreqRespiracao = 12;
-static volatile uint8_t displayConfigFlag = 0;
-static volatile uint32_t tempo_ms = 0;
 static volatile uint32_t FreqCardiaca = 60;
-static volatile uint32_t last_period = 0;
-static volatile uint16_t t_last = 0;
+static volatile uint16_t saturacaoO2 = 0;
+
+static volatile uint32_t tempo_ms = 0;
+
 static volatile uint8_t ledFlag = 0;
 
+static volatile uint16_t t_last = 0;
+static volatile uint32_t last_period = 0;
+static volatile uint8_t displayConfigFlag = 0;
 
 //Interrupções
+ISR(ADC_vect);
 ISR(TIMER0_COMPA_vect);
 ISR(TIMER1_CAPT_vect);
 ISR(INT0_vect);
@@ -41,7 +45,7 @@ int main(void)
 	uint8_t result = 0;
 
     while (1){ 
-  		changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+  		changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     	
     	if(ledFlag){
 	    	result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
@@ -64,8 +68,8 @@ int main(void)
 void init_registers(){
 	//GPIO
 	//Definição de direção das portas
-	set_bit(DDRC, 6);
 	
+	DDRC |= 0xFE;
 	DDRB |= 0b11111110;					//Todos os pinos da porta B serão de saída
 	DDRD |= ~(0b10001100<<0);			//Aciona os pinos 2, 3 e 7 da porta D como entrada
 	//Inicialização e pull-ups
@@ -90,7 +94,13 @@ void init_registers(){
 	set_bit(TIMSK1, ICIE1);				//Habilita interrupção por captura
 
 	//configuração ADC
-	
+
+
+	ADMUX = 0b01000001;					//VREF ligada, Habilita canal 0
+	//ADCSRA = 0b11101111;				//Habilita AD, habilita interrupção, conversão contínua,
+										//prescaler = 128
+	ADCSRB = 0x00;						//Modo de conversão contínua
+	DIDR0 = 0b00111100;					//Pinos PC0 e PC1 como entrada ADC0 e ADC1
 
 	
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
@@ -103,6 +113,14 @@ void init_lcd(){
 }
 
 
+
+ISR(ADC_vect){
+	ADCSRA = 0b00000000;
+	cpl_bit(PORTD, 0);
+
+	saturacaoO2 = 0.123*ADC;
+
+}
 
 
 ISR(TIMER1_CAPT_vect){
@@ -123,9 +141,13 @@ ISR(TIMER1_CAPT_vect){
 
 ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
+	
 	if((tempo_ms % (60000/(FreqRespiracao*16))) == 0){		//Caso o tempo atinja 1/16 do período
 		ledFlag = 1;
 	}
+
+	if(!(tempo_ms % 150))
+		ADCSRA = 0b11101111;
 }
 
 ISR(INT0_vect){					//Interrupção externa em PD2
@@ -142,5 +164,5 @@ ISR(PCINT2_vect){				//Interrupção externa na porta D
 
 	if(!tst_bit(PIND, 7))	//Caso PD7 tenha sido a causa da interrupção, mude o display
 		cpl_bit(displayConfigFlag, 0);
-	
+		
 }
