@@ -17,6 +17,7 @@ static volatile uint16_t tempo_ms = 0;
 static volatile uint32_t FreqCardiaca = 60;
 static volatile uint32_t last_period = 0;
 static volatile uint16_t t_last = 0;
+static volatile uint8_t ledFlag = 0;
 
 
 //Interrupções
@@ -37,9 +38,23 @@ int main(void)
 {
 	init_registers();
 	init_lcd();
+	uint8_t result = 0;
 
     while (1){ 
   		changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+    	
+    	if(ledFlag){
+	    	result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
+
+			if(tst_bit(result, 0))
+				set_bit(PORTD, 6);
+			else
+				clr_bit(PORTD, 6);
+
+			clr_bit(result, 0);
+			PORTB = result;
+			ledFlag = 0;
+		}
     }
 }
 
@@ -103,18 +118,8 @@ ISR(TIMER1_CAPT_vect){
 
 ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
-	uint8_t result = 0;
 	if((tempo_ms % (60000/(FreqRespiracao*16))) == 0){		//Caso o tempo atinja 1/16 do período
-		result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
-
-		if(tst_bit(result, 0))
-			set_bit(PORTD, 6);
-		else
-			clr_bit(PORTD, 6);
-
-		clr_bit(result, 0);
-		PORTB = result;
-
+		ledFlag = 1;
 	}
 }
 
