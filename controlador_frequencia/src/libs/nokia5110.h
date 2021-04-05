@@ -27,11 +27,11 @@
 /*
  * LCD's pins
  */
-#define LCD_SCE PC1
-#define LCD_RST PC2
-#define LCD_DC PC3
-#define LCD_DIN PC4
-#define LCD_CLK PC5
+#define LCD_SCE PC2
+#define LCD_RST PC3
+#define LCD_DC PC4
+#define LCD_DIN PC5
+#define LCD_CLK PC6
 
 #define LCD_CONTRAST 0x40
 

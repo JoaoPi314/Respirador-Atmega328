@@ -13,7 +13,7 @@
 //Variável estática só válida dentro desse arquivo
 static volatile uint8_t FreqRespiracao = 12;
 static volatile uint8_t displayConfigFlag = 0;
-static volatile uint16_t tempo_ms = 0;
+static volatile uint32_t tempo_ms = 0;
 static volatile uint32_t FreqCardiaca = 60;
 static volatile uint32_t last_period = 0;
 static volatile uint16_t t_last = 0;
@@ -79,6 +79,7 @@ void init_registers(){
 	PCMSK2 = 0b10000000;				//Ativa a interrupção individual do pino PD7
 	
 
+	//Configuração dos timers
 	TCCR0A = 0b00000010;				//TC0 operando em modo CTC
 	TCCR0B = 0b00000011;				//Liga TC0 com prescaler = 64
 	OCR0A  = 249;						//TC0 conta até 249
@@ -87,6 +88,10 @@ void init_registers(){
 	TCCR1B = 0b01000101;				//Prescaler em 1024, captura no posedge
 
 	set_bit(TIMSK1, ICIE1);				//Habilita interrupção por captura
+
+	//configuração ADC
+	
+
 	
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
 }
@@ -102,17 +107,17 @@ void init_lcd(){
 
 ISR(TIMER1_CAPT_vect){
 
-	cpl_bit(TCCR1B, 6);
-	if(ICR1 > t_last && t_last){
-	
-		FreqCardiaca = 2 * last_period * 64;
-		FreqCardiaca /= 1000;
-		FreqCardiaca = 60000/FreqCardiaca;
-	
-		last_period = (ICR1 - t_last);
+	cpl_bit(TCCR1B, 6);								//Após uma interrupção no posedge, a próxima será no negedge
+	if(ICR1 > t_last && t_last){					//Se o valor atual de ICR1 for maior que o valor anterior (sem OVF)
+		if(last_period != 0){						//Se o período calculado anteriormente não for 0
+			FreqCardiaca = 2 * last_period * 64;	//Início do cálculo da frequência -> Multiplica por 2 pois ICR1 - t_last é o tempo de borda alta/baixa
+			FreqCardiaca /= 1000;					//Nesse ponto, a frequência está armazenando o período em milisegundos
+			FreqCardiaca = 60000/FreqCardiaca;		//Converte para bpm
+		}
+		last_period = (ICR1 - t_last);				//Atualiza o valor anterior do período com o valor atual
 	}
 
-	t_last = ICR1;
+	t_last = ICR1;									//Atualiza o valor anterior do ICR1 com o valor atual
 
 }
 
