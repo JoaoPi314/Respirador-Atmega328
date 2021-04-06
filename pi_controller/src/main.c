@@ -7,10 +7,9 @@
 #include "libs/mascaras.h"
 #include "libs/nokia5110.h"
 
-static volatile uint16_t temper_int = 0;
-static volatile uint8_t temper_frac = 0;
+static volatile uint32_t temper = 0;
 static volatile uint32_t tempo_ms = 0;
-static volatile float temper = 0.0;
+static volatile uint8_t piFlag = 0;
 
 ISR(ADC_vect);
 ISR(TIMER0_COMPA_vect);
@@ -19,8 +18,8 @@ float piControler(float error);
 
 
 int main(){
-	char teste[6];
-	float dutyPWM = 0;
+	char pwm_str[4];
+	uint16_t dutyPWM = 0;
 	
 	//GPIO
 	DDRB |= 0xFF;		//Porta B como saída
@@ -41,7 +40,7 @@ int main(){
 	//PWM
 
 	TCCR2A = 0b10000011;				//Habilita PWM Rápido não invertido no pino 0C2A (PB3)
-	TCCR2B = 0x01;
+	TCCR2B = 0x01;						//Pre-scaler em 1
 
 
 
@@ -60,16 +59,17 @@ int main(){
 
 	while(1){
 
-		dutyPWM = piControler(36.0 - temper);
 
-		OCR2A = dutyPWM*2.55;
+		if(piFlag){									//A cada 1 segundo faz o controle
+			dutyPWM = piControler(340 - temper);	//340 ~ 36°C
+			piFlag = 0;								//Limpa a flag
+		}
+
+		OCR2A = dutyPWM;							//Registrador de PWM recebe a saída do controlador PI
 
 		nokia_lcd_clear();
-		itoa(temper_int, teste, 10);
-		nokia_lcd_write_string(teste, 1);
-		nokia_lcd_write_string(".", 1);
-		itoa(temper_frac, teste, 10);
-		nokia_lcd_write_string(teste, 1);
+		itoa(dutyPWM, pwm_str, 10);
+		nokia_lcd_write_string(pwm_str, 1);
 		nokia_lcd_render();
 	}
 
@@ -80,9 +80,7 @@ ISR(ADC_vect){					//Interrupção a cada 150ms
 	clr_bit(ADCSRA, 6);
 	clr_bit(ADCSRA, 5);
 	clr_bit(ADCSRA, 3);
-	temper = ADC*0.108;
-	temper_int = ADC*0.108;
-	temper_frac = ADC*10.8 - temper_int*100;
+	temper = ADC;
 
 }
 
@@ -94,23 +92,29 @@ ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0 (1ms)
 		set_bit(ADCSRA, 5);
 		set_bit(ADCSRA, 3);
 	}
+
+	if(!(tempo_ms % 1000))
+		piFlag = 1;
+
 }
 
 
 float piControler(float error){		//A entrada do controlador PI é sempre 36 - temp(t)
 
-	static float sumError = 0;
-	float kp = 10, ki = -100;			//Constantes de proporcionalidade e de integração
-	float output = 0;
+	float prop, integ = 0;
+	float kp = 400;
+	float ki = 100;
+	uint16_t PI;
 
-	//Primeiro passo
+	prop = kp * error;			//Fator proporcional
+	integ += ki * error;		//Fator integrativo
 
-	output = kp * error;
+	PI = prop + integ;			//PI
 
-	//Segundo passo
+	
+	PI /= 256;					//Resolução de 16 bits para 8 bits do pwm
+	if(PI == 256) PI = 255;		//Evita estouro
 
-	sumError+=error;
-	output = ki * sumError;
-	return output;
+	return PI + 30;				//Necessário para convergir para aproximadamente 36°C
 
 }
