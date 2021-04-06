@@ -102,7 +102,7 @@ void init_registers(){
 	//configuração ADC
 
 
-	ADMUX = 0b01000001;					//VREF ligada, Habilita canal 0
+	ADMUX = 0b01000001;					//AVCC ligada, Habilita canal 0
 	ADCSRA = 0b00000111;				//Habilita AD, habilita interrupção, conversão contínua,
 										//prescaler = 128
 	ADCSRB = 0x00;						//Modo de conversão contínua
