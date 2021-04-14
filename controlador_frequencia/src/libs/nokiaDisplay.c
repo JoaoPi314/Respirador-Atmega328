@@ -21,7 +21,7 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
     if(!sel){                                       //Caso sel seja 0, plota o display simples
         nokia_lcd_clear();
         char freq_str[3];
-        char card_srt[4];
+        char card_srt[8];
         char sat_str[4];
         char temp_str[3];
         char temp_str_2[2];

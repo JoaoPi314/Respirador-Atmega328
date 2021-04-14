@@ -9,21 +9,25 @@
 #include "libs/animateLed.h"
 #include "libs/nokiaDisplay.h"
 #include "libs/mascaras.h"
+#include "libs/registers.h"
 
 //Variável estática só válida dentro desse arquivo
-static volatile uint8_t FreqRespiracao = 12;
-static volatile uint32_t FreqCardiaca = 60;
-static volatile uint16_t saturacaoO2 = 0;
-static volatile float temper = 0;
 
-static volatile uint32_t tempo_ms = 0;
+//Variáveis dos sensores
+static volatile uint8_t FreqRespiracao = 12;		//Frequência de respiração
+static volatile uint32_t FreqCardiaca = 60;			//Frequência cardíaca
+static volatile uint16_t saturacaoO2 = 0;			//Saturação de O2 n sangue
+static volatile float temper = 0;					//Temperatura
 
-static volatile uint8_t ledFlag = 0;
-static volatile uint8_t flagLCD = 0;
+//Variável de controle principal
+static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
-static volatile uint16_t t_last = 0;
-static volatile uint32_t last_period = 0;
-static volatile uint8_t displayConfigFlag = 0;
+//Flags
+static volatile uint8_t ledFlag = 0;				//Flag para habilitar animação dos LEDs
+static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
+static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
+
+
 
 //Interrupções
 ISR(ADC_vect);
@@ -35,17 +39,20 @@ ISR(PCINT2_vect);
 
 
 //funções
-void init_registers();
-void init_lcd();
+void initLCD();
+void ledRoutine();
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(void)
 {
-	init_registers();
-	init_lcd();
-	uint8_t result = 0;
+	gpioSetup();
+	timerSetup();
+	adcSetup();
+	interruptSetup();
 
+	initLCD();
+	
     while (1){ 
   		
     	if(flagLCD){
@@ -54,15 +61,7 @@ int main(void)
     	}
     	
     	if(ledFlag){
-	    	result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
-
-			if(tst_bit(result, 0))
-				set_bit(PORTD, 6);
-			else
-				clr_bit(PORTD, 6);
-
-			clr_bit(result, 0);
-			PORTB = result;
+    		ledRoutine();
 			ledFlag = 0;
 		}
     }
@@ -70,70 +69,42 @@ int main(void)
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-void init_registers(){
-	//GPIO
-	//Definição de direção das portas
-	
-	DDRC |= 0b11111100;
-	DDRB |= 0b11111110;					//Todos os pinos da porta B serão de saída
-	DDRD |= ~(0b10001100<<0);			//Aciona os pinos 2, 3 e 7 da porta D como entrada
-	//Inicialização e pull-ups
-	PORTD |= (0b10001100<<0);			//Aciona o pull-up interno para os pinos 2, 3 e 7 da porta D
-	PORTB |= 0b00000001;				//Inicialmente todas as saídas estão NLB em B
-
-	//Interrupções
-	EICRA = 0b00001010;					//Interrupções INT1 e INT0 ativadas na borda de descida
-	EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
-	PCICR  = 0b00000100;				//Interrupções por mudança na porta D ativadas
-	PCMSK2 = 0b10000000;				//Ativa a interrupção individual do pino PD7
-	
-
-	//Configuração dos timers
-	TCCR0A = 0b00000010;				//TC0 operando em modo CTC
-	TCCR0B = 0b00000011;				//Liga TC0 com prescaler = 64
-	OCR0A  = 249;						//TC0 conta até 249
-	TIMSK0 = 0b00000010;				//Habilita interrupção por comparação com OCR0A
-
-	TCCR1B = 0b01000101;				//Prescaler em 1024, captura no posedge
-
-	set_bit(TIMSK1, ICIE1);				//Habilita interrupção por captura
-
-	//configuração ADC
-
-
-	ADMUX = 0b01000001;					//AVCC ligada, Habilita canal 0
-	ADCSRA = 0b00000111;				//Habilita AD, habilita interrupção, conversão contínua,
-										//prescaler = 128
-	ADCSRB = 0x00;						//Modo de conversão contínua
-	DIDR0 = 0b00111100;					//Pinos PC0 e PC1 como entrada ADC0 e ADC1
-
-	
-	sei();								//Bit SREG em 1 - Interrupções globais ativadas
-}
-
-void init_lcd(){
-	//LCD inits
+void initLCD(){
+	//LCD start
 	nokia_lcd_init();					//Inicia o display LCD
 	nokia_lcd_clear();					//Limpa a tela inicialmente
 }
 
+void ledRoutine(){
 
+    uint8_t result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
+
+	if(tst_bit(result, 0))
+		set_bit(PORTD, 6);
+	else
+		clr_bit(PORTD, 6);
+
+	clr_bit(result, 0);
+	PORTB = result;
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ISR(ADC_vect){
-	clr_bit(ADCSRA, 7);
-	clr_bit(ADCSRA, 6);
-	clr_bit(ADCSRA, 5);
-	clr_bit(ADCSRA, 3);
-	//ADCSRA = 0b00000000;
-	//cpl_bit(PORTD, 0);			//Para debug da frequência que a interrupção é gerada (1/300m)Hz
-	if(tst_bit(ADMUX, 0))
-		saturacaoO2 = 0.123*ADC;
+	clr_bit(ADCSRA, 3);							//ADC interrupt desabilitado
+	
+	//cpl_bit(PORTD, 0);						//Para debug da frequência que a interrupção é gerada (1/300m)Hz
+	
+	if(tst_bit(ADMUX, 0))						//Caso o canal 0 esteja sendo a fonte de interrupção
+		saturacaoO2 = 0.123*ADC;				//Cálculo da reta da saturação de O2
 	else
-		temper = (ADC + 205	)/20.46;
+		temper = (ADC + 205	)/20.46;			//Canal 1 -> Cálculo da reta de temperatura
 
+	//Alarme para condições críticas de temperatura e saturação de O2
 	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){
-		if(!(tempo_ms % 300))
+		if(!(tempo_ms % 300))				
 			cpl_bit(PORTD, 5);
 	}
 	else
@@ -144,17 +115,12 @@ ISR(ADC_vect){
 
 ISR(TIMER1_CAPT_vect){
 
-	cpl_bit(TCCR1B, 6);								//Após uma interrupção no posedge, a próxima será no negedge
-	if(ICR1 > t_last && t_last){					//Se o valor atual de ICR1 for maior que o valor anterior (sem OVF)
-		if(last_period != 0){						//Se o período calculado anteriormente não for 0
-			FreqCardiaca = 2 * last_period * 64;	//Início do cálculo da frequência -> Multiplica por 2 pois ICR1 - t_last é o tempo de borda alta/baixa
-			FreqCardiaca /= 1000;					//Nesse ponto, a frequência está armazenando o período em milisegundos
-			FreqCardiaca = 60000/FreqCardiaca;		//Converte para bpm
-		}
-		last_period = (ICR1 - t_last);				//Atualiza o valor anterior do período com o valor atual
-	}
+	FreqCardiaca = (uint32_t)ICR1 * 64;
+	FreqCardiaca /= 1000;
+	FreqCardiaca = 60000/FreqCardiaca;
 
-	t_last = ICR1;									//Atualiza o valor anterior do ICR1 com o valor atual
+
+	TCNT1 = 0;
 
 }
 
@@ -162,20 +128,17 @@ ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 	
 	if((tempo_ms % (60000/(FreqRespiracao*16))) == 0){		//Caso o tempo atinja 1/16 do período
-		ledFlag = 1;
+		ledFlag = 1;										//Flag de animação dos LEDs ativa
 	}
 
-	if(!(tempo_ms % 150)){
-		cpl_bit(ADMUX, 0);
-		set_bit(ADCSRA, 7);
-		set_bit(ADCSRA, 6);
-		set_bit(ADCSRA, 5);
-		set_bit(ADCSRA, 3);
+	if(!(tempo_ms % 150)){					//A cada 150ms o ADC é habilitado		
+		set_bit(ADCSRA, 3);					//ADC interrupt habilitado
 	}
 
-	if(!(tempo_ms % 200))
+	if(!(tempo_ms % 200)){					//A cada 200ms, mostra no LCD e altera o canal ADC
 		flagLCD = 1;
-
+		cpl_bit(ADMUX, 0);
+	}
 }
 
 ISR(INT0_vect){					//Interrupção externa em PD2

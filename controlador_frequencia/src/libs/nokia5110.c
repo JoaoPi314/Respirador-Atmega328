@@ -13,6 +13,10 @@
 
 #include "nokia5110.h"
 
+#ifndef F_CPU								//Prevenção caso tenha sido definido em outro arquivo ou em linha de comando
+#define F_CPU 16000000UL					//Definição do clock da CPU
+#endif
+
 #include <avr/pgmspace.h>
 #include <avr/io.h>
 #include <util/delay.h>
