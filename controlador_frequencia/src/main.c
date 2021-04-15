@@ -19,7 +19,7 @@ static volatile uint32_t FreqCardiaca = 60;			//Frequência cardíaca
 static volatile uint16_t saturacaoO2 = 0;			//Saturação de O2 n sangue
 static volatile float temper = 0;					//Temperatura
 static volatile uint8_t pressureChar;				//Dado USART recebido
-static volatile char pressure[8] = "---";		//Pressão arterial
+static volatile char pressure[8] = "       ";				//Pressão arterial
 //Variável de controle principal
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
@@ -29,7 +29,22 @@ static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
 static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
 static volatile uint8_t flagUsart = 0;				//Flag para indicar quando uma transação for recebida
 
-static volatile char errorMSG[8] = "ERROR!";
+static volatile char errorMSG[8] = "ERRO!  ";
+
+
+typedef enum states{ERROR = 0b0000, //0
+					INIT  = 0b0001, //1
+					M1    = 0b0011, //3
+					M2	  = 0b0010, //2
+					M3    = 0b0110, //6
+					X     = 0b0111, //7
+					L1    = 0b0101, //5
+					L2    = 0b0100, //4
+					L3    = 0b1100,	//C
+					LAST  = 0b1101, //D
+					DONE  = 0b1001	//9
+				} states;
+
 
 //Interrupções
 ISR(ADC_vect);
@@ -43,16 +58,12 @@ ISR(USART_RX_vect);
 //funções
 void initLCD();
 void ledRoutine();
-uint8_t pressureMeasure(char * message);
+states pressureMeasure(char *message);
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(void)
 {
-
-	char message[8];
-	uint8_t decodeStatus = 0;
-
 	gpioSetup();
 	timerSetup();
 	adcSetup();
@@ -71,11 +82,6 @@ int main(void)
     	if(ledFlag){
     		ledRoutine();
 			ledFlag = 0;
-		}
-
-		if(flagUsart){
-			decodeStatus = pressureMeasure(message);
-			flagUsart = 0;
 		}
     }
 }
@@ -102,51 +108,83 @@ void ledRoutine(){
 }
 
 
-uint8_t pressureMeasure(char * message){
-	uint8_t errorFlag = 0;					//Caso 1, indica que houve um erro e interrompe a decodificação
-	static uint8_t totalBytes = 0;			//Vai de 0 até 8 (; à :)
+states pressureMeasure(char * message){
 
-	if(!totalBytes){
-		//Flag de erro caso byte 0 seja diferente de ;
-		errorFlag = (pressureChar == 0x3b) ? 0 : 1;
-		UDR0 = errorFlag;
-	}
-	else if(totalBytes < 4){
-		//Flag de erro caso um dos 3 próximos byte não seja numérico
-		errorFlag = ((pressureChar >= 0x30) && (pressureChar <= 0x39)) ? 0 : 1;
-		//UDR0 = errorFlag;
-	}
-	else if (totalBytes == 4){
-		//Flag de erro caso o byte 4 seja diferente de x
-		errorFlag = (pressureChar == 0x78) ? 0 : 1;
-		//UDR0 = errorFlag;
-	}
-	else if (totalBytes < 8)
-		//Flag de erro caso um dos 3 próximos bytes não seja numérico
-		errorFlag = ((pressureChar >= 0x30) && (pressureChar <= 0x39)) ? 0 : 1;
-	else if (totalBytes == 9){
-		//Flag de erro caso último byte seja diferente de :
-		errorFlag = (pressureChar == 0x3a) ? 0 : 1;
-	}/*else
-		//Flag de erro caso último caractere enviado não seja o carriage return
-		errorFlag = (pressureChar == 0x0d) ? 0 : 1;
-*/
+	static states actualState = INIT;
+	static states nextState = INIT;
 
-	if(errorFlag){
-		totalBytes = 0;
-		return 0;
-	}
-	else if(totalBytes != 0 && totalBytes != 8){
-		message[totalBytes - 1] = (char) pressureChar;
-		UDR0 = 42;
+	static uint8_t i;
+	actualState = nextState;
+
+	//Processamento do próximo estado e da saída
+	switch(actualState){
+		case INIT:		//Estado idle, verifica o primeiro char
+			nextState = (pressureChar == 0x3b) ? M1 : ERROR; 		//Só vai para o próximo estado caso o caractere seja ';'
+			i = 0;
+			break;
+
+		case M1:		//Estado do primeiro dígito da máxima	
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? M2 : ERROR;	//Só vaí para M2 caso seja numérico
+			message[i] = pressureChar;
+			i++;
+			break;
+
+		case M2:		//Estado do segundo dígito da máxima
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? M3 :		//Só vai para M3 caso seja numérico
+						(pressureChar == 0x78) ? L1 : ERROR;							//Caso não, vai para L1 caso seja 'x'
+			message[i] = pressureChar;
+			i++;
+			break;
+
+		case M3:		//Estado do terceiro dígito da máxima
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? X :		//Só vai para X caso seja numérico
+						(pressureChar == 0x78) ? L1 : ERROR;							//Caso não, vai para L1 caso seja 'x'
+			message[i] = pressureChar;
+			i++;
+			break;
+
+		case X:			//Estado do caractere 'x' que divide a máxima e a mínima	
+			nextState = (pressureChar == 0x78) ? L1 : ERROR;	//Só vai para L1 caso seja x
+			message[i] = pressureChar;
+			i++;
+			break;
+
+		case L1:		//Estado do primeiro dígito da mínima
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? L2 : ERROR;		//Só vai para L2 caso seja numérico
+			message[i] = pressureChar;
+			i++;
+			break;
+
+		case L2:		//Estado do segundo dígito da mínima
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? L3 :		//Só vai para L3 caso seja numérico
+						(pressureChar == 0x3a) ? DONE : ERROR;						//Vai para DONE caso seja ':'
+			message[i] = (nextState == L3) ? pressureChar : ' ';
+			i++;
+			break;
+
+		case L3:		//Estado do terceiro dígito da mínima
+			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? LAST : 	//Só vai para LAST caso seja numérico
+						(pressureChar == 0x3a) ? DONE : ERROR;						//Só vai para DONE caso seja ':'
+			message[i] = (nextState == LAST) ? pressureChar : ' ';
+			i++;
+			break;
+		
+		case LAST:
+			nextState = (pressureChar == 0x3a) ? DONE : ERROR;						//Vai para DONE se ':'
+			break;
+
+		case DONE:		//Estado final
+			nextState = (pressureChar == 0x3b) ? M1 : ERROR; 		//Só vai para M1 caso o caractere seja ';'
+			i = 0;
+			break;
+
+		case ERROR:		//Estado padrão é ERROR
+			nextState = (pressureChar == 0x3b) ? M1 : ERROR;		//Sai do erro com o ';'
+			i = 0;
 	}
 
-	if(totalBytes == 8){
-		totalBytes = 0;
-		return 2;
-	}
-	totalBytes++;
-	return 1;
+
+	return nextState;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -219,5 +257,24 @@ ISR(PCINT2_vect){				//Interrupção externa na porta D
 
 ISR(USART_RX_vect){
 	pressureChar = UDR0;
-	flagUsart = 1;
+
+	static char message[8] = "       "; 
+
+	states decodeStatus = INIT;
+
+	decodeStatus = pressureMeasure(message);
+	
+	if(decodeStatus == ERROR){
+		for(uint8_t j = 0; j < 8; j++){
+			pressure[j] = errorMSG[j];
+			message[j] = ' ';
+		}
+	}else if(decodeStatus == DONE){
+	 	for(uint8_t j = 0; j < 7; j++){
+	 		pressure[j] = message[j];
+	 		message[j] = ' ';
+	 	}
+	}
+
+
 }
