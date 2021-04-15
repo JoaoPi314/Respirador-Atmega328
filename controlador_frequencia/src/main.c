@@ -77,6 +77,8 @@ int main(void)
     	if(flagLCD){
   			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		flagLCD = 0;
+    		UDR0 = FreqRespiracao;
+
     	}
     	
     	if(ledFlag){
@@ -207,6 +209,7 @@ ISR(ADC_vect){
 	else
 		clr_bit(PORTD, 5);
 
+
 }
 
 
@@ -275,6 +278,5 @@ ISR(USART_RX_vect){
 	 		message[j] = ' ';
 	 	}
 	}
-
 
 }
