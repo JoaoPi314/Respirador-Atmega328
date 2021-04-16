@@ -10,6 +10,7 @@
 #include "libs/nokiaDisplay.h"
 #include "libs/mascaras.h"
 #include "libs/registers.h"
+#include "libs/pressureCtrl.h"
 
 //Variável estática só válida dentro desse arquivo
 
@@ -17,8 +18,7 @@
 static volatile uint8_t FreqRespiracao = 12;		//Frequência de respiração
 static volatile uint32_t FreqCardiaca = 60;			//Frequência cardíaca
 static volatile uint16_t saturacaoO2 = 0;			//Saturação de O2 n sangue
-static volatile float temper = 0;					//Temperatura
-static volatile uint8_t pressureChar;				//Dado USART recebido
+static volatile float temper = 10;					//Temperatura
 static volatile char pressure[8] = "       ";				//Pressão arterial
 //Variável de controle principal
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
@@ -27,23 +27,10 @@ static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 static volatile uint8_t ledFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
 static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
-static volatile uint8_t flagUsart = 0;				//Flag para indicar quando uma transação for recebida
 
 static volatile char errorMSG[8] = "ERRO!  ";
 
 
-typedef enum states{ERROR = 0b0000, //0
-					INIT  = 0b0001, //1
-					M1    = 0b0011, //3
-					M2	  = 0b0010, //2
-					M3    = 0b0110, //6
-					X     = 0b0111, //7
-					L1    = 0b0101, //5
-					L2    = 0b0100, //4
-					L3    = 0b1100,	//C
-					LAST  = 0b1101, //D
-					DONE  = 0b1001	//9
-				} states;
 
 
 //Interrupções
@@ -58,12 +45,13 @@ ISR(USART_RX_vect);
 //funções
 void initLCD();
 void ledRoutine();
-states pressureMeasure(char *message);
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(void)
 {
+	uint8_t txAttribute = 0;		//0 = freqresp, 2 = temperatura, 3 = saturação de O2
+
 	gpioSetup();
 	timerSetup();
 	adcSetup();
@@ -76,8 +64,36 @@ int main(void)
   		
     	if(flagLCD){
   			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+    		
+    		switch(txAttribute){
+			case 0:
+				UDR0 = FreqRespiracao;
+				txAttribute++;
+				break;
+			case 1:
+				UDR0 = (uint8_t) temper;
+				txAttribute++;
+				break;
+			case 2:
+				UDR0 = (uint8_t) saturacaoO2;
+				txAttribute++;
+				break;
+			case 3:
+				UDR0 = (uint8_t) FreqCardiaca;
+				txAttribute++;
+				break;
+			default:
+				for(uint8_t i = 0; i < 8; i++){
+				 	while(!(UCSR0A & (1 << UDRE0)));
+				 	UDR0 = pressure[i];
+				}
+			 	while(!(UCSR0A & (1 << UDRE0)));
+			 	UDR0 = 100;
+				txAttribute = 0;
+				break;
+			}
+
     		flagLCD = 0;
-    		UDR0 = FreqRespiracao;
 
     	}
     	
@@ -110,84 +126,6 @@ void ledRoutine(){
 }
 
 
-states pressureMeasure(char * message){
-
-	static states actualState = INIT;
-	static states nextState = INIT;
-
-	static uint8_t i;
-	actualState = nextState;
-
-	//Processamento do próximo estado e da saída
-	switch(actualState){
-		case INIT:		//Estado idle, verifica o primeiro char
-			nextState = (pressureChar == 0x3b) ? M1 : ERROR; 		//Só vai para o próximo estado caso o caractere seja ';'
-			i = 0;
-			break;
-
-		case M1:		//Estado do primeiro dígito da máxima	
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? M2 : ERROR;	//Só vaí para M2 caso seja numérico
-			message[i] = pressureChar;
-			i++;
-			break;
-
-		case M2:		//Estado do segundo dígito da máxima
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? M3 :		//Só vai para M3 caso seja numérico
-						(pressureChar == 0x78) ? L1 : ERROR;							//Caso não, vai para L1 caso seja 'x'
-			message[i] = pressureChar;
-			i++;
-			break;
-
-		case M3:		//Estado do terceiro dígito da máxima
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? X :		//Só vai para X caso seja numérico
-						(pressureChar == 0x78) ? L1 : ERROR;							//Caso não, vai para L1 caso seja 'x'
-			message[i] = pressureChar;
-			i++;
-			break;
-
-		case X:			//Estado do caractere 'x' que divide a máxima e a mínima	
-			nextState = (pressureChar == 0x78) ? L1 : ERROR;	//Só vai para L1 caso seja x
-			message[i] = pressureChar;
-			i++;
-			break;
-
-		case L1:		//Estado do primeiro dígito da mínima
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? L2 : ERROR;		//Só vai para L2 caso seja numérico
-			message[i] = pressureChar;
-			i++;
-			break;
-
-		case L2:		//Estado do segundo dígito da mínima
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? L3 :		//Só vai para L3 caso seja numérico
-						(pressureChar == 0x3a) ? DONE : ERROR;						//Vai para DONE caso seja ':'
-			message[i] = (nextState == L3) ? pressureChar : ' ';
-			i++;
-			break;
-
-		case L3:		//Estado do terceiro dígito da mínima
-			nextState = (pressureChar >= 0x30 && pressureChar <= 0x39) ? LAST : 	//Só vai para LAST caso seja numérico
-						(pressureChar == 0x3a) ? DONE : ERROR;						//Só vai para DONE caso seja ':'
-			message[i] = (nextState == LAST) ? pressureChar : ' ';
-			i++;
-			break;
-		
-		case LAST:
-			nextState = (pressureChar == 0x3a) ? DONE : ERROR;						//Vai para DONE se ':'
-			break;
-
-		case DONE:		//Estado final
-			nextState = (pressureChar == 0x3b) ? M1 : ERROR; 		//Só vai para M1 caso o caractere seja ';'
-			i = 0;
-			break;
-
-		case ERROR:		//Estado padrão é ERROR
-			nextState = (pressureChar == 0x3b) ? M1 : ERROR;		//Sai do erro com o ';'
-			i = 0;
-	}
-
-
-	return nextState;
-}
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -219,7 +157,6 @@ ISR(TIMER1_CAPT_vect){
 	FreqCardiaca /= 1000;
 	FreqCardiaca = 60000/FreqCardiaca;
 
-
 	TCNT1 = 0;
 
 }
@@ -227,6 +164,7 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 	
+
 	if((tempo_ms % (60000/(FreqRespiracao*16))) == 0){		//Caso o tempo atinja 1/16 do período
 		ledFlag = 1;										//Flag de animação dos LEDs ativa
 	}
@@ -239,6 +177,8 @@ ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 		flagLCD = 1;
 		cpl_bit(ADMUX, 0);
 	}
+
+
 }
 
 ISR(INT0_vect){					//Interrupção externa em PD2
@@ -258,14 +198,15 @@ ISR(PCINT2_vect){				//Interrupção externa na porta D
 		
 }
 
+
+
 ISR(USART_RX_vect){
-	pressureChar = UDR0;
 
 	static char message[8] = "       "; 
 
 	states decodeStatus = INIT;
 
-	decodeStatus = pressureMeasure(message);
+	decodeStatus = pressureMeasure(message, UDR0);
 	
 	if(decodeStatus == ERROR){
 		for(uint8_t j = 0; j < 8; j++){
@@ -277,6 +218,7 @@ ISR(USART_RX_vect){
 	 		pressure[j] = message[j];
 	 		message[j] = ' ';
 	 	}
+
 	}
 
 }

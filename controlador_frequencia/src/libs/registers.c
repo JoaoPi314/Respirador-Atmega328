@@ -63,7 +63,7 @@ void adcSetup(){
 
 void usartSetup(){
 	//Configuração USART
-	UCSR0B = 0b10011000;					//Interrupção por RX habilitada, receiver habilitado, transmiter habilitado
+	UCSR0B = 0b10011000;					//Interrupções por RX habilitadas, receiver habilitado, transmiter habilitado
 	UCSR0C = 0b00000110;					//Modo assíncrono, sem paridade, 1 bit de parada, 8 bits de dado
 
 	UBRR0H = ((MYUBRR) >> 8);					//Parte mais significativa do Baud rate
