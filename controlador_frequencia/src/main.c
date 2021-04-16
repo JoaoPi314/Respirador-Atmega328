@@ -19,7 +19,7 @@ static volatile uint8_t FreqRespiracao = 12;		//Frequência de respiração
 static volatile uint32_t FreqCardiaca = 60;			//Frequência cardíaca
 static volatile uint16_t saturacaoO2 = 0;			//Saturação de O2 n sangue
 static volatile float temper = 10;					//Temperatura
-static volatile char pressure[8] = "       ";				//Pressão arterial
+static volatile char pressure[8] = "       ";		//Pressão arterial
 //Variável de controle principal
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
@@ -65,6 +65,8 @@ int main(void)
     	if(flagLCD){
   			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
+
+    		//A cada 200ms, um dos 5 dados é enviado para o LCD
     		switch(txAttribute){
 			case 0:
 				UDR0 = FreqRespiracao;
@@ -84,7 +86,7 @@ int main(void)
 				break;
 			default:
 				for(uint8_t i = 0; i < 8; i++){
-				 	while(!(UCSR0A & (1 << UDRE0)));
+				 	while(!(UCSR0A & (1 << UDRE0)));	//Infelizmente a CPU é trava um pouco aqui, mas não observei nenhum resultado negativo devido a isso
 				 	UDR0 = pressure[i];
 				}
 			 	while(!(UCSR0A & (1 << UDRE0)));
@@ -148,8 +150,13 @@ ISR(ADC_vect){
 		clr_bit(PORTD, 5);
 
 
+	cpl_bit(ADMUX, 0);							//altera o canal ADC após feita uma leitura
 }
 
+/*
+	O método de obter o período foi otimizado. Agora só preciso de uma variável
+
+ */
 
 ISR(TIMER1_CAPT_vect){
 
@@ -173,9 +180,8 @@ ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 		set_bit(ADCSRA, 3);					//ADC interrupt habilitado
 	}
 
-	if(!(tempo_ms % 200)){					//A cada 200ms, mostra no LCD e altera o canal ADC
+	if(!(tempo_ms % 200)){					//A cada 200ms, mostra no LCD
 		flagLCD = 1;
-		cpl_bit(ADMUX, 0);
 	}
 
 
@@ -202,18 +208,18 @@ ISR(PCINT2_vect){				//Interrupção externa na porta D
 
 ISR(USART_RX_vect){
 
-	static char message[8] = "       "; 
+	static char message[8] = "       "; 		//Mensagem que armazenará o valor da pressão
 
-	states decodeStatus = INIT;
+	states decodeStatus = INIT;					//Estado inicial da FSM
 
-	decodeStatus = pressureMeasure(message, UDR0);
+	decodeStatus = pressureMeasure(message, UDR0);	//Chamada da FSM
 	
-	if(decodeStatus == ERROR){
+	if(decodeStatus == ERROR){					//Caso o estado retornado seja o de erro, pressure = "ERRO!  "
 		for(uint8_t j = 0; j < 8; j++){
 			pressure[j] = errorMSG[j];
 			message[j] = ' ';
 		}
-	}else if(decodeStatus == DONE){
+	}else if(decodeStatus == DONE){				//Caso o estado retornado seja o DONE, pressure = message
 	 	for(uint8_t j = 0; j < 7; j++){
 	 		pressure[j] = message[j];
 	 		message[j] = ' ';

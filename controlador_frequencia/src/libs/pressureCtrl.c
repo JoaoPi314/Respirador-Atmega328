@@ -7,6 +7,12 @@
 
 #include "pressureCtrl.h"
 
+/*
+ * A função pressureMeasure() implementa a FSM (Finite state machine)
+ * responsável pela identificação da sequência ;MMMxLLL:
+ * Parâmetros: @message: String que será concatenada a cada chamada
+ *			   @pressureChar: Byte atual da leitura da USART
+ */
 
 states pressureMeasure(char * message, uint8_t pressureChar){
 
@@ -14,9 +20,9 @@ states pressureMeasure(char * message, uint8_t pressureChar){
 	static states nextState = INIT;
 
 	static uint8_t i;
-	actualState = nextState;
+	actualState = nextState;		//Após todo estado, o atual é atualizado
 
-	//Processamento do próximo estado e da saída
+	//Processamento do próximo estado e concatenação da mensagem
 	switch(actualState){
 		case INIT:		//Estado idle, verifica o primeiro char
 			nextState = (pressureChar == 0x3b) ? M1 : ERROR; 		//Só vai para o próximo estado caso o caractere seja ';'
