@@ -16,10 +16,8 @@
 void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure){
     
     nokia_lcd_clear();
-    nokia_lcd_plot(freq, "resp/min", 30);           //sempre chama a função de plot para atualizar o gráfico mesmo quando nã ofor mostrado
 
     if(!sel){                                       //Caso sel seja 0, plota o display simples
-        nokia_lcd_clear();
         char freq_str[3];
         char card_srt[8];
         char sat_str[4];

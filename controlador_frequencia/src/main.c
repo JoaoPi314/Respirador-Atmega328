@@ -6,7 +6,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "libs/animateLed.h"
+#include "libs/moveServo.h"
 #include "libs/nokiaDisplay.h"
 #include "libs/mascaras.h"
 #include "libs/registers.h"
@@ -24,7 +24,7 @@ static volatile char pressure[8] = "       ";		//Pressão arterial
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
 //Flags
-static volatile uint8_t ledFlag = 0;				//Flag para habilitar animação dos LEDs
+static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
 static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
 
@@ -36,15 +36,14 @@ static volatile char errorMSG[8] = "ERRO!  ";
 //Interrupções
 ISR(ADC_vect);
 ISR(TIMER0_COMPA_vect);
-ISR(TIMER1_CAPT_vect);
 ISR(INT0_vect);
 ISR(INT1_vect);
 ISR(PCINT2_vect);
+ISR(PCINT0_vect);
 ISR(USART_RX_vect);
 
 //funções
 void initLCD();
-void ledRoutine();
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -99,9 +98,10 @@ int main(void)
 
     	}
     	
-    	if(ledFlag){
-    		ledRoutine();
-			ledFlag = 0;
+    	if(servoFlag){
+    		//OCR1A = 2500;
+    		//OCR1A = moveServo(FreqRespiracao);				//Chama rotina de animação de leds
+			servoFlag = 0;
 		}
     }
 }
@@ -114,27 +114,11 @@ void initLCD(){
 	nokia_lcd_clear();					//Limpa a tela inicialmente
 }
 
-void ledRoutine(){
-
-    uint8_t result = animateLed(FreqRespiracao);				//Chama rotina de animação de leds
-
-	if(tst_bit(result, 0))
-		set_bit(PORTD, 6);
-	else
-		clr_bit(PORTD, 6);
-
-	clr_bit(result, 0);
-	PORTB = result;
-}
-
-
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ISR(ADC_vect){
 	clr_bit(ADCSRA, 3);							//ADC interrupt desabilitado
 	
-	//cpl_bit(PORTD, 0);						//Para debug da frequência que a interrupção é gerada (1/300m)Hz
 	
 	if(tst_bit(ADMUX, 0))						//Caso o canal 0 esteja sendo a fonte de interrupção
 		saturacaoO2 = 0.123*ADC;				//Cálculo da reta da saturação de O2
@@ -153,27 +137,13 @@ ISR(ADC_vect){
 	cpl_bit(ADMUX, 0);							//altera o canal ADC após feita uma leitura
 }
 
-/*
-	O método de obter o período foi otimizado. Agora só preciso de uma variável
-
- */
-
-ISR(TIMER1_CAPT_vect){
-
-	FreqCardiaca = (uint32_t)ICR1 * 64;
-	FreqCardiaca /= 1000;
-	FreqCardiaca = 60000/FreqCardiaca;
-
-	TCNT1 = 0;
-
-}
 
 ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 	
 
-	if((tempo_ms % (60000/(FreqRespiracao*16))) == 0){		//Caso o tempo atinja 1/16 do período
-		ledFlag = 1;										//Flag de animação dos LEDs ativa
+	if((tempo_ms % (60000/(FreqRespiracao*18))) == 0){		//Caso o tempo atinja 1/18 do período
+		servoFlag = 1;										//Flag de animação dos LEDs ativa
 	}
 
 	if(!(tempo_ms % 150)){					//A cada 150ms o ADC é habilitado		
@@ -197,11 +167,26 @@ ISR(INT1_vect){					//Interrupção externa em PD3
 		FreqRespiracao--;
 }
 
+
+ISR(PCINT0_vect){				//Interrupção externa na porta B
+	if(!tst_bit(PINB, 0))	//Caso PB0 tenha sido a causa da interrupção, mude o display
+		cpl_bit(displayConfigFlag, 0);		
+}
+
+
 ISR(PCINT2_vect){				//Interrupção externa na porta D
 
-	if(!tst_bit(PIND, 7))	//Caso PD7 tenha sido a causa da interrupção, mude o display
-		cpl_bit(displayConfigFlag, 0);
-		
+	static uint32_t lastTime = 0;
+
+	if(tst_bit(PIND, 4)){						//Caso PD4 tenha sido NLA
+		lastTime = tempo_ms;					//Armazena o tempo que estava NLA
+	}
+	else if(!(tst_bit(PIND, 4))){				//Caso PD4 tenha sido NLB
+		if(tempo_ms > lastTime){
+			FreqCardiaca = 2*(tempo_ms - lastTime);	//Freq tem o período em ms
+			FreqCardiaca = 60000 / FreqCardiaca;	//Frq tem a frequência em bpm
+		}
+	}
 }
 
 

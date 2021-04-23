@@ -1,13 +1,13 @@
 /*---------------------------------------------------------------------	*
- * Arquivo: animateLed.h												*
+ * Arquivo: moveServo.h													*
  * Criador: João Pedro Melquiades Gomes      Mat: 118110077				*
- * Descrição: Arquivo com o protótipo da função que anima a barra de	*
- * led, definição de constantes e inclusão das bibliotecas necessárias	*
+ * Descrição: Arquivo com o protótipo da função que move o servo motor,	*
+ * definição de constantes e inclusão das bibliotecas necessárias		*
  *---------------------------------------------------------------------	*/
 
 
-#ifndef ANIMATELED_H_
-#define ANIMATELED_H_
+#ifndef MOVESERVO_H
+#define MOVESERVO_H
 
 #ifndef F_CPU								//Prevenção caso tenha sido definido em outro arquivo ou em linha de comando
 #define F_CPU 16000000UL					//Definição do clock da CPU
@@ -18,6 +18,6 @@
 
 
 
-uint8_t animateLed(uint8_t FreqRespiracao);	//Prot�tipo da função
+uint8_t moveServo(uint8_t FreqRespiracao);	//Prot�tipo da função
 
-#endif /* ANIMATELED_H_ */
+#endif /* MOVESERVO_H */
