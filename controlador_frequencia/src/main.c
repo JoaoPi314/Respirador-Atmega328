@@ -27,6 +27,7 @@ static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
 static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
+static volatile uint8_t requestFromAlert = 0;		//Flag que indica que o buzzer está sendo usado pelo mecanismo de alerta
 
 static volatile char errorMSG[8] = "ERRO!  ";
 
@@ -100,8 +101,16 @@ int main(void)
     	
     	if(servoFlag){
     		//OCR1A = 2500;
-    		//OCR1A = moveServo(FreqRespiracao);				//Chama rotina de animação de leds
+    		OCR1A = moveServo(FreqRespiracao);				//Chama rotina de animação de leds
 			servoFlag = 0;
+			if(!requestFromAlert){
+				if(OCR1A == 2000){
+					set_bit(PORTD, 5);
+				}
+				else{
+					clr_bit(PORTD, 5);
+				}
+			}
 		}
     }
 }
@@ -126,13 +135,15 @@ ISR(ADC_vect){
 		temper = (ADC + 205	)/20.46;			//Canal 1 -> Cálculo da reta de temperatura
 
 	//Alarme para condições críticas de temperatura e saturação de O2
-	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){
-		if(!(tempo_ms % 300))				
+	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){				
+		requestFromAlert = 1;
+		if((tempo_ms % 300))
 			cpl_bit(PORTD, 5);
 	}
-	else
+	else{
 		clr_bit(PORTD, 5);
-
+		requestFromAlert = 0;
+	}
 
 	cpl_bit(ADMUX, 0);							//altera o canal ADC após feita uma leitura
 }

@@ -18,6 +18,6 @@
 
 
 
-uint8_t moveServo(uint8_t FreqRespiracao);	//Prot�tipo da função
+uint16_t moveServo(uint8_t FreqRespiracao);	//Prot�tipo da função
 
 #endif /* MOVESERVO_H */

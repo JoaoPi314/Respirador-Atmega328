@@ -14,16 +14,18 @@
  * momento
  */
 
-uint8_t moveServo(uint8_t FreqRespiracao){
+uint16_t moveServo(uint8_t FreqRespiracao){
 	
 	static uint8_t count = 0;				//Variável que irá definir quando a configuração de LEDs irá mudar
-	static uint8_t pwm = 250;				//5% duty cycle (0.05 * 5000)
+	static uint16_t pwm = 2000;				//5% duty cycle (0.05 * 5000)
+
+
 	if(count < 9){
-		pwm += 28;
+		pwm += 222;
 		count++;							//Aproximadamente + 22.5°
 	}else{
-		pwm -= 28;
-		if(pwm == 250)
+		pwm -= 222;
+		if(pwm == 2000)
 			count = 0;
 	}
 
