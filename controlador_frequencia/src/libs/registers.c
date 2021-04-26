@@ -36,7 +36,7 @@ void timerSetup(){
 	TCCR1A = 0b10100010;				//Canais OC1A e OC1B com PWM rápido~(TOP = ICR1)
 	TCCR1B = 0b00011010;				//Prescaler em 1, Comparação com ICR1
 	OCR1A  = 2000;
-	OCR1B  = 4000;
+	OCR1B  = 2000;
 
 }
 

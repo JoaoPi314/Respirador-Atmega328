@@ -63,7 +63,7 @@ int main(void)
     while (1){ 
   		
     	if(flagLCD){
-  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
 
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
@@ -100,7 +100,6 @@ int main(void)
     	}
     	
     	if(servoFlag){
-    		//OCR1A = 2500;
     		OCR1A = moveServo(FreqRespiracao);				//Chama rotina de animação de leds
 			servoFlag = 0;
 			if(!requestFromAlert){
@@ -169,19 +168,47 @@ ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
 }
 
 ISR(INT0_vect){					//Interrupção externa em PD2
-	if(FreqRespiracao < 30)
-		FreqRespiracao++;
+
+	switch(displayConfigFlag){
+		case 0:	//Configuração padrão, apenas mostra os dados vitais
+			break;
+		case 1:	//Ajuste da frequência de respiração
+			if(FreqRespiracao < 30)
+				FreqRespiracao++;
+			break;
+		case 2: //Ajuste da válvula de O2
+			if(OCR1B < 4000)
+				OCR1B += 200;	//Cada 200 no duty cycle significa mais 10%
+		default:
+			break;
+	}
 }
 
 ISR(INT1_vect){					//Interrupção externa em PD3
-	if(FreqRespiracao > 5)
-		FreqRespiracao--;
+
+	switch(displayConfigFlag){
+		case 0:	//Configuração padrão, apenas mostra os dados vitais
+			break;
+		case 1:	//Ajuste da frequência de respiração
+			if(FreqRespiracao > 5)
+				FreqRespiracao--;
+			break;
+		case 2: //Ajuste da válvula de O2
+			if(OCR1B > 2000)
+				OCR1B -= 200;	//Cada 200 no duty cycle significa mais 10%
+		default:
+			break;
+	}
 }
 
 
 ISR(PCINT0_vect){				//Interrupção externa na porta B
-	if(!tst_bit(PINB, 0))	//Caso PB0 tenha sido a causa da interrupção, mude o display
-		cpl_bit(displayConfigFlag, 0);		
+	if(!tst_bit(PINB, 0)){				//Caso PB0 tenha sido a causa da interrupção, mude o display
+		if(displayConfigFlag < 2)		//Vai alterando o display a cada aperto, varia de 0 a 2
+			displayConfigFlag++;
+		else
+			displayConfigFlag = 0;
+	}	
 }
 
 
