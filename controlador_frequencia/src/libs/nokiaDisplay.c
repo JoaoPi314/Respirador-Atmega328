@@ -27,6 +27,7 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
     uint8_t temp_dec = temp*10 - temp_int*10;
 
 
+
     for(uint8_t i = 0; i < 84; i++)
         nokia_lcd_set_pixel(i, 9, 1);
 
@@ -101,12 +102,6 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
             nokia_lcd_write_string("resp/min", 1);
             nokia_lcd_set_cursor(36, 30);
             nokia_lcd_write_string("\%O2", 1);
-
-    }
-
-
-
-    if(!sel){                                       //Caso sel seja 0, plota o display simples
 
     }
 

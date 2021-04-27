@@ -38,6 +38,12 @@ void timerSetup(){
 	OCR1A  = 2000;
 	OCR1B  = 2000;
 
+
+	//TC2
+	TCCR2A = 0b10000011;				//OC2A habilitado (fast PWM). Modo fast PWM ativado
+	TCCR2B = 0b00000001;				//Pre scaler em 1
+	OCR2A  = 71;						//Equivalente PWM para 5 rsp/min (255 -> 30), (0 -> 5)
+
 }
 
 
