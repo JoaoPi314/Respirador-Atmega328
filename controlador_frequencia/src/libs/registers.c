@@ -14,10 +14,10 @@ void gpioSetup(){
 	//Definição de direção das portas
 	DDRC |= 0b11111100;
 	DDRB |= 0b11111110;					//Todos os pinos da porta B serão de saída
-	DDRD |= 0b01100011;					//Aciona os pinos 2, 3 e 7 da porta D como entrada
+	DDRD |= 0b11100011;					//Aciona os pinos 2, 3 e 4 da porta D como entrada
 	
 	//Inicialização e pull-ups
-	PORTD |= 0b10001100;				//Aciona o pull-up interno para os pinos 2, 3 e 7 da porta D
+	PORTD |= 0b00001100;				//Aciona o pull-up interno para os pinos 2 e 3 da porta D
 	PORTB |= 0b00000001;				//Inicialmente todas as saídas estão NLB em B. Pull up ativo em B0
 }
 
@@ -25,10 +25,10 @@ void gpioSetup(){
 
 void timerSetup(){
 	//Configuração dos timers
-	//TC0
-	TCCR0A = 0b00000010;				//TC0 operando em modo CTC
-	TCCR0B = 0b00000011;				//Liga TC0 com prescaler = 64
-	OCR0A  = 249;						//TC0 conta até 249
+	//TC2
+	TCCR2A = 0b00000010;				//TC2 operando em modo CTC
+	TCCR2B = 0b00000100;				//Liga TC2 com prescaler = 64
+	OCR2A  = 249;						//TC2 conta até 249
 
 
 	//TC1
@@ -39,11 +39,11 @@ void timerSetup(){
 	OCR1B  = 2000;
 
 
-	//TC2
-	TCCR2A = 0b10000011;				//OC2A habilitado (fast PWM). Modo fast PWM ativado
-	TCCR2B = 0b00000001;				//Pre scaler em 1
-	OCR2A  = 71;						//Equivalente PWM para 5 rsp/min (255 -> 30), (0 -> 5)
-
+	//TC0
+	OCR0A  = 75;						//Equivalente PWM para 5 rsp/min (255 -> 30), (0 -> 5)
+	TCCR0A = 0b00100011;				//OC0B habilitado (fast PWM). Modo fast PWM ativado (TOP = OCR0A)
+	TCCR0B = 0b00001101;				//Pre scaler em 1024. Modo fast PWM ativado (TOP = 0CR0A)
+	OCR0B = OCR0A / 2;					//Duty cycle de 50%
 }
 
 
@@ -57,7 +57,7 @@ void interruptSetup(){
 	PCMSK2 = 0b00010000;				//Ativa a interrupção individual do pino PD4
 
 	//Timers
-	TIMSK0 = 0b00000010;				//Habilita interrupção por comparação com OCR0A
+	TIMSK2 = 0b00000010;				//Habilita interrupção por comparação com OCR0A
 
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
 }

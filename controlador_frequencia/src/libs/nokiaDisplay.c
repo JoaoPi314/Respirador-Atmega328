@@ -104,7 +104,7 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
             nokia_lcd_write_string("\%O2", 1);
 
     }
-
+    
     nokia_lcd_render();
 
 }

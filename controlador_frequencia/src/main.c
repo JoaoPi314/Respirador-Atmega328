@@ -36,7 +36,7 @@ static volatile char errorMSG[8] = "ERRO!  ";
 
 //Interrupções
 ISR(ADC_vect);
-ISR(TIMER0_COMPA_vect);
+ISR(TIMER2_COMPA_vect);
 ISR(INT0_vect);
 ISR(INT1_vect);
 ISR(PCINT2_vect);
@@ -104,10 +104,10 @@ int main(void)
 			servoFlag = 0;
 			if(!requestFromAlert){
 				if(OCR1A == 2000){
-					set_bit(PORTD, 5);
+					set_bit(PORTD, 6);
 				}
 				else{
-					clr_bit(PORTD, 5);
+					clr_bit(PORTD, 6);
 				}
 			}
 		}
@@ -137,10 +137,10 @@ ISR(ADC_vect){
 	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){				
 		requestFromAlert = 1;
 		if((tempo_ms % 300))
-			cpl_bit(PORTD, 5);
+			cpl_bit(PORTD, 6);
 	}
 	else{
-		clr_bit(PORTD, 5);
+		clr_bit(PORTD, 6);
 		requestFromAlert = 0;
 	}
 
@@ -148,9 +148,9 @@ ISR(ADC_vect){
 }
 
 
-ISR(TIMER0_COMPA_vect){			//Interrupção por overflow do TC0
+ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
-	
+
 
 	if((tempo_ms % (60000/(FreqRespiracao*18))) == 0){		//Caso o tempo atinja 1/18 do período
 		servoFlag = 1;										//Flag de animação dos LEDs ativa
@@ -175,6 +175,9 @@ ISR(INT0_vect){					//Interrupção externa em PD2
 		case 1:	//Ajuste da frequência de respiração
 			if(FreqRespiracao < 30)
 				FreqRespiracao++;
+			OCR0A = 915.527/FreqRespiracao - 1;
+			OCR0B = OCR0A / 2;
+
 			break;
 		case 2: //Ajuste da válvula de O2
 			if(OCR1B < 4000)
@@ -192,6 +195,8 @@ ISR(INT1_vect){					//Interrupção externa em PD3
 		case 1:	//Ajuste da frequência de respiração
 			if(FreqRespiracao > 5)
 				FreqRespiracao--;
+			OCR0A = 915.527/FreqRespiracao - 1;
+			OCR0B = OCR0A / 2;
 			break;
 		case 2: //Ajuste da válvula de O2
 			if(OCR1B > 2000)
