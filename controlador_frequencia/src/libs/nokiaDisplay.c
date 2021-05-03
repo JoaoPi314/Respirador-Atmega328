@@ -13,7 +13,7 @@
  * da frequência de respiração em função do tempo
  */
 
-void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv){
+void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume){
     
     nokia_lcd_clear();
 
@@ -23,6 +23,7 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
     char temp_str[3];
     char temp_str_2[2];
     char o2_str[4];
+    char volume_str[3];
     uint16_t temp_int = temp;
     uint8_t temp_dec = temp*10 - temp_int*10;
 
@@ -69,18 +70,24 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
 
             itoa(freq, freq_str, 10);                   
             itoa(o2Valv, o2_str, 10);
+            itoa(volume, volume_str, 10);
 
-            nokia_lcd_set_cursor(2, 15);
+
+            nokia_lcd_set_cursor(2, 12);
             nokia_lcd_write_char('*', 1);
-            nokia_lcd_set_cursor(10, 15);
+            nokia_lcd_set_cursor(10, 12);
             nokia_lcd_write_string(freq_str, 1);
-            nokia_lcd_set_cursor(10, 30);
+            nokia_lcd_set_cursor(10, 24);
             nokia_lcd_write_string(o2_str, 1);
+            nokia_lcd_set_cursor(10, 36);
+            nokia_lcd_write_string(volume_str, 1);          
             
-            nokia_lcd_set_cursor(36, 15);
+            nokia_lcd_set_cursor(36, 12);
             nokia_lcd_write_string("resp/min", 1);
-            nokia_lcd_set_cursor(36, 30);
+            nokia_lcd_set_cursor(36, 24);
             nokia_lcd_write_string("\%O2", 1);
+            nokia_lcd_set_cursor(36, 36);
+            nokia_lcd_write_string("vol", 1);
 
             break;
 
@@ -90,18 +97,48 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
 
             itoa(freq, freq_str, 10);                   
             itoa(o2Valv, o2_str, 10);
+            itoa(volume, volume_str, 10);
 
-            nokia_lcd_set_cursor(2, 30);
+            nokia_lcd_set_cursor(2, 24);
             nokia_lcd_write_char('*', 1);
-            nokia_lcd_set_cursor(10, 15);
+            nokia_lcd_set_cursor(10, 12);
             nokia_lcd_write_string(freq_str, 1);
-            nokia_lcd_set_cursor(10, 30);
+            nokia_lcd_set_cursor(10, 24);
             nokia_lcd_write_string(o2_str, 1);
-            
-            nokia_lcd_set_cursor(36, 15);
+            nokia_lcd_set_cursor(10, 36);
+            nokia_lcd_write_string(volume_str, 1);  
+
+            nokia_lcd_set_cursor(36, 12);
             nokia_lcd_write_string("resp/min", 1);
-            nokia_lcd_set_cursor(36, 30);
+            nokia_lcd_set_cursor(36, 24);
             nokia_lcd_write_string("\%O2", 1);
+            nokia_lcd_set_cursor(36, 36);
+            nokia_lcd_write_string("vol", 1);
+
+            break;
+        case 3:
+            nokia_lcd_set_cursor(0, 0);
+            nokia_lcd_write_string(" Parametros", 1);
+
+            itoa(freq, freq_str, 10);                   
+            itoa(o2Valv, o2_str, 10);
+            itoa(volume, volume_str, 10);
+
+            nokia_lcd_set_cursor(2, 36);
+            nokia_lcd_write_char('*', 1);
+            nokia_lcd_set_cursor(10, 12);
+            nokia_lcd_write_string(freq_str, 1);
+            nokia_lcd_set_cursor(10, 24);
+            nokia_lcd_write_string(o2_str, 1);
+            nokia_lcd_set_cursor(10, 36);
+            nokia_lcd_write_string(volume_str, 1);  
+                        
+            nokia_lcd_set_cursor(36, 12);
+            nokia_lcd_write_string("resp/min", 1);
+            nokia_lcd_set_cursor(36, 24);
+            nokia_lcd_write_string("\%O2", 1);
+            nokia_lcd_set_cursor(36, 36);
+            nokia_lcd_write_string("vol", 1);
 
     }
     

@@ -14,6 +14,10 @@
 
 //Variável estática só válida dentro desse arquivo
 
+//Controle dos atuadores
+static volatile uint8_t volumeRespirador = 8;		//Controle do volume do respirador
+
+
 //Variáveis dos sensores
 static volatile uint8_t FreqRespiracao = 12;		//Frequência de respiração
 static volatile uint32_t FreqCardiaca = 60;			//Frequência cardíaca
@@ -63,7 +67,7 @@ int main(void)
     while (1){ 
   		
     	if(flagLCD){
-  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100, volumeRespirador);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
 
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
@@ -100,7 +104,7 @@ int main(void)
     	}
     	
     	if(servoFlag){
-    		OCR1A = moveServo(FreqRespiracao);				//Chama rotina de animação de leds
+    		OCR1A = moveServo(FreqRespiracao, volumeRespirador);				//Chama rotina de animação de leds
 			servoFlag = 0;
 			if(!requestFromAlert){
 				if(OCR1A == 2000){
@@ -152,7 +156,7 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 
 
-	if((tempo_ms % (60000/(FreqRespiracao*18))) == 0){		//Caso o tempo atinja 1/18 do período
+	if((tempo_ms % (60000/(FreqRespiracao*2*volumeRespirador))) == 0){//Caso o tempo atinja 1/(volume*2)do período
 		servoFlag = 1;										//Flag de animação dos LEDs ativa
 	}
 
@@ -182,6 +186,10 @@ ISR(INT0_vect){					//Interrupção externa em PD2
 		case 2: //Ajuste da válvula de O2
 			if(OCR1B < 4000)
 				OCR1B += 200;	//Cada 200 no duty cycle significa mais 10%
+			break;
+		case 3: //Ajuste do volume do respirador
+			if(volumeRespirador < 8)
+				volumeRespirador ++;
 		default:
 			break;
 	}
@@ -201,6 +209,10 @@ ISR(INT1_vect){					//Interrupção externa em PD3
 		case 2: //Ajuste da válvula de O2
 			if(OCR1B > 2000)
 				OCR1B -= 200;	//Cada 200 no duty cycle significa mais 10%
+			break;
+		case 3: //Ajuste do volume do respirador
+			if(volumeRespirador > 1)
+				volumeRespirador --;
 		default:
 			break;
 	}
@@ -209,7 +221,7 @@ ISR(INT1_vect){					//Interrupção externa em PD3
 
 ISR(PCINT0_vect){				//Interrupção externa na porta B
 	if(!tst_bit(PINB, 0)){				//Caso PB0 tenha sido a causa da interrupção, mude o display
-		if(displayConfigFlag < 2)		//Vai alterando o display a cada aperto, varia de 0 a 2
+		if(displayConfigFlag < 3)		//Vai alterando o display a cada aperto, varia de 0 a 2
 			displayConfigFlag++;
 		else
 			displayConfigFlag = 0;

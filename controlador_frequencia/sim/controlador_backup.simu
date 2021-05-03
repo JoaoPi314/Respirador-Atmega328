@@ -198,7 +198,7 @@ Circuit Id: Push-20
 
 Unique  Id: Clock-53: 
 Circuit Id: Clock-104
-<item vflip="1" Out="true" labelx="-64" hflip="1" valLabRot="0" valLabelx="-11" Show_id="false" labely="-24" circRot="2.3715151000379834e-322" Show_Volt="true" labelrot="0" id="Clock-104" itemtype="Clock" rotation="0" Unit=" V" objectName="Clock-53" boardPos="-1e+06,-1e+06" valLabely="11" Running="true" x="-640" Voltage="5" Freq="1" y="-420" mainComp="false" circPos="0,0" boardRot="-1000000"/>
+<item vflip="1" Out="false" labelx="-64" hflip="1" valLabRot="0" valLabelx="-11" Show_id="false" labely="-24" circRot="2.3715151000379834e-322" Show_Volt="true" labelrot="0" id="Clock-104" itemtype="Clock" rotation="0" Unit=" V" objectName="Clock-53" boardPos="-1e+06,-1e+06" valLabely="11" Running="true" x="-640" Voltage="5" Freq="1" y="-420" mainComp="false" circPos="0,0" boardRot="-1000000"/>
 
 Unique  Id: TextComponent-52: 
 Circuit Id: TextComponent-97
