@@ -13,12 +13,12 @@ void gpioSetup(){
 	//GPIO
 	//Definição de direção das portas
 	DDRC |= 0b11111100;
-	DDRB |= 0b11111110;					//Todos os pinos da porta B serão de saída
+	DDRB |= 0b00111110;					//Todos os pinos da porta B serão de saída, exceto B0, B6 e B7
 	DDRD |= 0b11100011;					//Aciona os pinos 2, 3 e 4 da porta D como entrada
 	
 	//Inicialização e pull-ups
 	PORTD |= 0b00001100;				//Aciona o pull-up interno para os pinos 2 e 3 da porta D
-	PORTB |= 0b00000001;				//Inicialmente todas as saídas estão NLB em B. Pull up ativo em B0
+	PORTB |= 0b01000001;				//Inicialmente todas as saídas estão NLB em B. Pull up ativo em B0 e B6
 }
 
 
@@ -53,7 +53,7 @@ void interruptSetup(){
 	EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
 	PCICR  = 0b00000101;				//Interrupções por mudança na porta D e B ativadas
 
-	PCMSK0 = 0b00000001;				//Ativa a interrupção individual do pino PB0
+	PCMSK0 = 0b11000001;				//Ativa a interrupção individual do pino PB0, PB6 e PB7
 	PCMSK2 = 0b00010000;				//Ativa a interrupção individual do pino PD4
 
 	//Timers
@@ -77,6 +77,6 @@ void usartSetup(){
 	UCSR0B = 0b10011000;					//Interrupções por RX habilitadas, receiver habilitado, transmiter habilitado
 	UCSR0C = 0b00000110;					//Modo assíncrono, sem paridade, 1 bit de parada, 8 bits de dado
 
-	UBRR0H = ((MYUBRR) >> 8);					//Parte mais significativa do Baud rate
+	UBRR0H = ((MYUBRR) >> 8);				//Parte mais significativa do Baud rate
 	UBRR0L = MYUBRR;						//Parte menos significativa do Baud rate
 }

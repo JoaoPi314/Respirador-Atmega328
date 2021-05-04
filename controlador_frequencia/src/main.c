@@ -28,6 +28,7 @@ static volatile char pressure[8] = "       ";		//Pressão arterial
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
 //Flags
+static volatile uint8_t breathMode = 0;				// 0 - Forçado; 1 - Assistido
 static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
 static volatile uint8_t displayConfigFlag = 0;		//Flag que indica qual display será mostrado (geral ou gráfico)
@@ -67,7 +68,7 @@ int main(void)
     while (1){ 
   		
     	if(flagLCD){
-  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100, volumeRespirador);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
 
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
@@ -103,7 +104,7 @@ int main(void)
 
     	}
     	
-    	if(servoFlag){
+    	if(servoFlag && !breathMode){		//Só entra caso esteja no modo forçado
     		OCR1A = moveServo(FreqRespiracao, volumeRespirador);				//Chama rotina de animação de leds
 			servoFlag = 0;
 			if(!requestFromAlert){
@@ -156,9 +157,10 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 
 
-	if((tempo_ms % (60000/(FreqRespiracao*2*volumeRespirador))) == 0){//Caso o tempo atinja 1/(volume*2)do período
-		servoFlag = 1;										//Flag de animação dos LEDs ativa
-	}
+	if(!breathMode)		//No breath mode 0, a respiração é controlada totalmente pelo hardware
+		if((tempo_ms % (60000/(FreqRespiracao*2*volumeRespirador))) == 0){//Caso o tempo atinja 1/(volume*2)do período
+			servoFlag = 1;										//Flag de animação dos LEDs ativa
+		}
 
 	if(!(tempo_ms % 150)){					//A cada 150ms o ADC é habilitado		
 		set_bit(ADCSRA, 3);					//ADC interrupt habilitado
@@ -225,7 +227,15 @@ ISR(PCINT0_vect){				//Interrupção externa na porta B
 			displayConfigFlag++;
 		else
 			displayConfigFlag = 0;
-	}	
+	}else if(!tst_bit(PINB, 6)){				//Caso PB6 tenha sido pressionado, troca o modo de respiração
+		cpl_bit(breathMode, 0);
+		cpl_bit(PORTB, 3);						//Variável que trava a animação da barra de LED caso o modo seja assistido
+	}else if(tst_bit(PINB, 7) && breathMode){	//Caso um posedge de PB7 tenha causado a interrupção e o breathmode for assistido
+		OCR1A = volumeRespirador*250 + 2000;
+	}else if(!tst_bit(PINB, 7) && breathMode){	//caso um negedge de PB7 tenha causado a interrupção e o breathmode for assistido
+		OCR1A = 2000;
+	}
+
 }
 
 
