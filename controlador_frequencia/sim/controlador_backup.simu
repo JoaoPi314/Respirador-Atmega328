@@ -434,7 +434,7 @@ Circuit Id: Node-297
 
 Unique  Id: Clock-1: 
 Circuit Id: Clock-308
-<item circPos="0,0" id="Clock-308" circRot="6.9304953331171921e-310" boardRot="-1000000" mainComp="false" labelrot="0" x="-648" vflip="1" valLabely="8" valLabRot="0" boardPos="-1e+06,-1e+06" rotation="0" Freq="0.5" Show_Volt="true" labely="-24" Running="true" labelx="-64" Unit=" V" itemtype="Clock" objectName="Clock-1" Show_id="false" valLabelx="-16" Voltage="5" Out="false" y="-360" hflip="1"/>
+<item circPos="0,0" id="Clock-308" circRot="6.9304953331171921e-310" boardRot="-1000000" mainComp="false" labelrot="0" x="-648" vflip="1" valLabely="8" valLabRot="0" boardPos="-1e+06,-1e+06" rotation="0" Freq="0.5" Show_Volt="true" labely="-24" Running="true" labelx="-64" Unit=" V" itemtype="Clock" objectName="Clock-1" Show_id="false" valLabelx="-16" Voltage="5" Out="true" y="-360" hflip="1"/>
 
 Unique  Id: SerialPort-103: 
 Circuit Id: SerialPort-130
