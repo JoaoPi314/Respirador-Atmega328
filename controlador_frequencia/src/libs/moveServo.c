@@ -17,15 +17,15 @@
 uint16_t moveServo(uint8_t FreqRespiracao, uint8_t volume){
 	
 	static uint8_t count = 0;				//Variável que irá definir quando a configuração de LEDs irá mudar
-	static uint16_t pwm = 2000;				//5% duty cycle (0.05 * 5000)
+	static uint16_t pwm = 12;				//5% duty cycle (0.05 * 5000)
 
 
 	if(count < volume){
-		pwm += 250;
+		pwm += 1;
 		count++;							//Aproximadamente + 22.5°
 	}else{
-		pwm -= 250;
-		if(pwm == 2000)
+		pwm -= 1;
+		if(pwm == 12)
 			count = 0;
 	}
 

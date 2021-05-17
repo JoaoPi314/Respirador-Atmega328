@@ -6,8 +6,8 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+//#include "libs/lcd.h"
 #include "libs/moveServo.h"
-#include "libs/nokiaDisplay.h"
 #include "libs/mascaras.h"
 #include "libs/registers.h"
 #include "libs/pressureCtrl.h"
@@ -15,7 +15,7 @@
 //Variável estática só válida dentro desse arquivo
 
 //Controle dos atuadores
-static volatile uint8_t volumeRespirador = 8;		//Controle do volume do respirador
+static volatile uint8_t volumeRespirador = 10;		//Controle do volume do respirador
 
 
 //Variáveis dos sensores
@@ -48,8 +48,6 @@ ISR(PCINT2_vect);
 ISR(PCINT0_vect);
 ISR(USART_RX_vect);
 
-//funções
-void initLCD();
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -57,18 +55,19 @@ int main(void)
 {
 	uint8_t txAttribute = 0;		//0 = freqresp, 2 = temperatura, 3 = saturação de O2
 
+	//i2c_initialise();
 	gpioSetup();
 	timerSetup();
 	adcSetup();
 	interruptSetup();
 	usartSetup();
 
-	initLCD();
+	//OLED_Init();
 	
     while (1){ 
   		
     	if(flagLCD){
-  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, (OCR1B/20) - 100, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+  			//changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
 
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
@@ -91,7 +90,7 @@ int main(void)
 				break;
 			default:
 				for(uint8_t i = 0; i < 8; i++){
-				 	while(!(UCSR0A & (1 << UDRE0)));	//Infelizmente a CPU é trava um pouco aqui, mas não observei nenhum resultado negativo devido a isso
+				 	while(!(UCSR0A & (1 << UDRE0)));	//Infelizmente a CPU trava um pouco aqui, mas não observei nenhum resultado negativo devido a isso
 				 	UDR0 = pressure[i];
 				}
 			 	while(!(UCSR0A & (1 << UDRE0)));
@@ -105,14 +104,14 @@ int main(void)
     	}
     	
     	if(servoFlag && !breathMode){		//Só entra caso esteja no modo forçado
-    		OCR1A = moveServo(FreqRespiracao, volumeRespirador);				//Chama rotina de animação de leds
+    		OCR0B = moveServo(FreqRespiracao, volumeRespirador);				//Chama rotina que move o servo
 			servoFlag = 0;
 			if(!requestFromAlert){
-				if(OCR1A == 2000){
-					set_bit(PORTD, 6);
+				if(OCR0B < 13){
+					set_bit(PORTB, 6);
 				}
 				else{
-					clr_bit(PORTD, 6);
+					clr_bit(PORTB, 6);
 				}
 			}
 		}
@@ -121,35 +120,71 @@ int main(void)
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-void initLCD(){
-	//LCD start
-	nokia_lcd_init();					//Inicia o display LCD
-	nokia_lcd_clear();					//Limpa a tela inicialmente
-}
-
 //------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ISR(ADC_vect){
 	clr_bit(ADCSRA, 3);							//ADC interrupt desabilitado
 	
 	
-	if(tst_bit(ADMUX, 0))						//Caso o canal 0 esteja sendo a fonte de interrupção
+	if(!tst_bit(ADMUX, 2) && !tst_bit(ADMUX, 1) && !tst_bit(ADMUX, 0))						//Caso o canal 0 esteja sendo a fonte de interrupção
 		saturacaoO2 = 0.123*ADC;				//Cálculo da reta da saturação de O2
-	else
-		temper = (ADC + 205	)/20.46;			//Canal 1 -> Cálculo da reta de temperatura
+	else if(!tst_bit(ADMUX, 2) && !tst_bit(ADMUX, 1) && tst_bit(ADMUX, 0))					//Caso o canal 1 esteja sendo a fonte de interrupção
+		temper = (ADC + 205	)/20.46;
+	else if(!tst_bit(ADMUX, 2) && tst_bit(ADMUX, 1) && !tst_bit(ADMUX, 0)){			//Caso o canal 2 esteja sendo a fonte de interrupção
+		switch(ADC){
+			case 168:	//Seleção de tela
+				if(displayConfigFlag < 3)		//Vai alterando o display a cada aperto, varia de 0 a 2
+					displayConfigFlag++;
+				else
+					displayConfigFlag = 0;
+				break;
+			case 157:	//Muda modo
+				cpl_bit(breathMode, 0);
+				break;
+			case 960:	// Diminui freq. resp
+				if(FreqRespiracao > 5)
+					FreqRespiracao--;
+				break;
+			case 675:	//Aumenta freq. resp
+				if(FreqRespiracao < 30)
+					FreqRespiracao++;
+				break;
+			case 852:	// Diminui O2
+				if(OCR0A > 12)
+					OCR0A -= 1;	//Cada 1 no duty cycle significa menos 10%
+				break;
+			case 619:	//Aumenta O2
+				if(OCR0A < 22)
+					OCR0A += 1;	//Cada 1 no duty cycle significa mais 10%			
+				break;
+			case 401:	//Diminui vol
+				if(volumeRespirador > 1)
+					volumeRespirador --;
+				break;
+			case 340:	//Aumenta vol
+				if(volumeRespirador < 10)
+					volumeRespirador ++;
+				break;
+			
+		}
+
+	}
 
 	//Alarme para condições críticas de temperatura e saturação de O2
 	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){				
 		requestFromAlert = 1;
-		if((tempo_ms % 300))
-			cpl_bit(PORTD, 6);
+		set_bit(PORTB, 6);
 	}
 	else{
-		clr_bit(PORTD, 6);
+		//clr_bit(PORTD, 6);
 		requestFromAlert = 0;
 	}
 
-	cpl_bit(ADMUX, 0);							//altera o canal ADC após feita uma leitura
+	
+	if(!tst_bit(ADMUX, 1))	//Caso nao esteja ainda no canal 3
+		ADMUX ++;							//altera o canal ADC após feita uma leitura
+	else
+		ADMUX-=2;
 }
 
 
@@ -162,7 +197,7 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 			servoFlag = 1;										//Flag de animação dos LEDs ativa
 		}
 
-	if(!(tempo_ms % 150)){					//A cada 150ms o ADC é habilitado		
+	if(!(tempo_ms % 50)){					//A cada 150ms o ADC é habilitado		
 		set_bit(ADCSRA, 3);					//ADC interrupt habilitado
 	}
 
@@ -173,80 +208,15 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 
 }
 
-ISR(INT0_vect){					//Interrupção externa em PD2
-
-	switch(displayConfigFlag){
-		case 0:	//Configuração padrão, apenas mostra os dados vitais
-			break;
-		case 1:	//Ajuste da frequência de respiração
-			if(FreqRespiracao < 30)
-				FreqRespiracao++;
-			OCR0A = 915.527/FreqRespiracao - 1;
-			OCR0B = OCR0A / 2;
-
-			break;
-		case 2: //Ajuste da válvula de O2
-			if(OCR1B < 4000)
-				OCR1B += 200;	//Cada 200 no duty cycle significa mais 10%
-			break;
-		case 3: //Ajuste do volume do respirador
-			if(volumeRespirador < 8)
-				volumeRespirador ++;
-		default:
-			break;
-	}
-}
-
-ISR(INT1_vect){					//Interrupção externa em PD3
-
-	switch(displayConfigFlag){
-		case 0:	//Configuração padrão, apenas mostra os dados vitais
-			break;
-		case 1:	//Ajuste da frequência de respiração
-			if(FreqRespiracao > 5)
-				FreqRespiracao--;
-			OCR0A = 915.527/FreqRespiracao - 1;
-			OCR0B = OCR0A / 2;
-			break;
-		case 2: //Ajuste da válvula de O2
-			if(OCR1B > 2000)
-				OCR1B -= 200;	//Cada 200 no duty cycle significa mais 10%
-			break;
-		case 3: //Ajuste do volume do respirador
-			if(volumeRespirador > 1)
-				volumeRespirador --;
-		default:
-			break;
-	}
-}
-
-
-ISR(PCINT0_vect){				//Interrupção externa na porta B
-	if(!tst_bit(PINB, 0)){				//Caso PB0 tenha sido a causa da interrupção, mude o display
-		if(displayConfigFlag < 3)		//Vai alterando o display a cada aperto, varia de 0 a 2
-			displayConfigFlag++;
-		else
-			displayConfigFlag = 0;
-	}else if(!tst_bit(PINB, 6)){				//Caso PB6 tenha sido pressionado, troca o modo de respiração
-		cpl_bit(breathMode, 0);
-		cpl_bit(PORTB, 3);						//Variável que trava a animação da barra de LED caso o modo seja assistido
-	}else if(tst_bit(PINB, 7) && breathMode){	//Caso um posedge de PB7 tenha causado a interrupção e o breathmode for assistido
-		OCR1A = volumeRespirador*250 + 2000;
-	}else if(!tst_bit(PINB, 7) && breathMode){	//caso um negedge de PB7 tenha causado a interrupção e o breathmode for assistido
-		OCR1A = 2000;
-	}
-
-}
-
 
 ISR(PCINT2_vect){				//Interrupção externa na porta D
 
 	static uint32_t lastTime = 0;
 
-	if(tst_bit(PIND, 4)){						//Caso PD4 tenha sido NLA
+	if(tst_bit(PIND, 7)){						//Caso PD4 tenha sido NLA
 		lastTime = tempo_ms;					//Armazena o tempo que estava NLA
 	}
-	else if(!(tst_bit(PIND, 4))){				//Caso PD4 tenha sido NLB
+	else if(!(tst_bit(PIND, 7))){				//Caso PD4 tenha sido NLB
 		if(tempo_ms > lastTime){
 			FreqCardiaca = 2*(tempo_ms - lastTime);	//Freq tem o período em ms
 			FreqCardiaca = 60000 / FreqCardiaca;	//Frq tem a frequência em bpm

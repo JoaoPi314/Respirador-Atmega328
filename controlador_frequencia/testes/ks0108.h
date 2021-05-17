@@ -7,6 +7,7 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include "mascaras.h"
 
@@ -17,33 +18,50 @@
 #define Y_INIT    0xb8		//Comando para iniciar Y
 #define PAG_INIT  0xb8		//Comando para iniciar página
 
-//Temporario
-#define DATA PORTD
-#define CTRL PORTC
-/////////
-#define RST PC0
-#define CS1 PC1
-#define CS2 PC2
-#define EN  PC4
-#define RW  PC5
-#define RS  PC6
 
-#define set_write() 	_delay_us(1); clr_bit(CTRL, RW)		//Configura modo de escrita
-#define set_read()  	_delay_us(1); set_bit(CTRL, RW)		//Configura modo de leitura 
-#define set_data()  	_delay_us(1); set_bit(CTRL, RS)		//Configura envio de dados
-#define set_inst()		_delay_us(1); clr_bit(CTRL, RS)		//Configura envio de instrução
+//Byte de configuração:
+/*
 
-#define set_CS1()   	_delay_us(1); set_bit(CTRL, CS1)	//Configura primeira metade do LCD
-#define set_CS2()   	_delay_us(1); set_bit(CTRL, CS2)	//Configura segunda metade do LCD
-#define clr_CS1()   	_delay_us(1); clr_bit(CTRL, CS1)	//Inativa primeira metade do LCD
-#define clr_CS2()   	_delay_us(1); clr_bit(CTRL, CS2)	//Inativa segunda metade do LCD
-#define set_enable()	_delay_us(1); set_bit(CTRL, EN)		//Ativa o enable
-#define clr_enable()	_delay_us(1); clr_bit(CTRL, EN)		//Desativa o enable
-#define set_rst()		_delay_us(1); set_bit(CTRL, RST)	//Ativa reset
-#define clr_rst()		_delay_us(1); clr_bit(CTRL, RST)	//Desativa reset
+|    0     |    0     |     0     |    RST   |    CS2   |    CS1    |    RW    |    RS    |
 
-#define reset_LCD()		clr_rst(); set_rst()				//Pulso de reset
-#define enable_LCD()	set_enable(), clr_enable()			//Pulso de enable
+*/
+
+
+/////
+#define RS  0
+#define RW  1
+#define CS1 2
+#define CS2 3
+#define RST 4
+
+#define CTRL_PORT PORTB
+#define STB PB1
+#define CLK PB2
+#define DT  PB3
+#define EN  PB4
+
+#define STB_pulse() set_bit(CTRL_PORT, STB); _delay_us(10); clr_bit(CTRL_PORT, STB)
+#define CLK_pulse() set_bit(CTRL_PORT, CLK); _delay_us(10); clr_bit(CTRL_PORT, CLK)
+
+
+#define set_write(CTRL) 	_delay_us(1); clr_bit(CTRL, RW)		//Configura modo de escrita
+#define set_read(CTRL)  	_delay_us(1); set_bit(CTRL, RW)		//Configura modo de leitura 
+#define set_data(CTRL)  	_delay_us(1); set_bit(CTRL, RS)		//Configura envio de dados
+#define set_inst(CTRL)		_delay_us(1); clr_bit(CTRL, RS)		//Configura envio de instrução
+
+#define set_CS1(CTRL)   	_delay_us(1); set_bit(CTRL, CS1)	//Configura primeira metade do LCD
+#define set_CS2(CTRL)   	_delay_us(1); set_bit(CTRL, CS2)	//Configura segunda metade do LCD
+#define clr_CS1(CTRL)   	_delay_us(1); clr_bit(CTRL, CS1)	//Inativa primeira metade do LCD
+#define clr_CS2(CTRL)   	_delay_us(1); clr_bit(CTRL, CS2)	//Inativa segunda metade do LCD
+#define set_enable()		_delay_us(1); set_bit(CTRL_PORT, EN)		//Ativa o enable
+#define clr_enable()		_delay_us(1); clr_bit(CTRL_PORT, EN)		//Desativa o enable
+#define set_rst(CTRL)		_delay_us(1); set_bit(CTRL, RST)	//Ativa reset
+#define clr_rst(CTRL)		_delay_us(1); clr_bit(CTRL, RST)	//Desativa reset
+
+#define reset_LCD(CTRL)		clr_rst(CTRL); set_rst(CTRL)				//Pulso de reset
+#define enable_LCD()		set_enable(), clr_enable()			//Pulso de enable
+
+
 
 
 /////////////////////////////////////////FUNÇÕES///////////////////////////////////////////
@@ -53,6 +71,11 @@ void ks0108_write(uint8_t data, uint8_t col, uint8_t page);
 void ks0108_clear();
 void ks0108_write_char(uint8_t c, uint8_t col, uint8_t page);
 void ks0108_write_string(uint8_t type, uint8_t *str, uint8_t col, uint8_t page);
+
+
+//////////////////////////// SERIAL /////////////////////////////////////
+
+void serial_com(uint8_t ctrl, uint8_t data);
 
 
 #endif //KS0108_H
