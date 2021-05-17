@@ -14,27 +14,26 @@ void ks0108_init(){
 
 	set_CS1(ctrl_byte);
 	set_CS2(ctrl_byte);
-	reset_LCD(ctrl_byte);
+	reset_LCD();
 	set_inst(ctrl_byte);
 	set_write(ctrl_byte);
 	data_byte = POWER_LCD;
 	serial_com(ctrl_byte, data_byte);
 	enable_LCD();
 
-	data_byte = ROW_INIT;
-	serial_com(ctrl_byte, data_byte);
-	enable_LCD();
-	data_byte = Y_INIT;   
-	serial_com(ctrl_byte, data_byte);
-	enable_LCD();
+	 data_byte = ROW_INIT;
+	 serial_com(ctrl_byte, data_byte);
+	 enable_LCD();
+	 data_byte = Y_INIT;   
+	 serial_com(ctrl_byte, data_byte);
+	 enable_LCD();
 
-	data_byte = PAG_INIT;
-
+ 	data_byte = PAG_INIT;
 	serial_com(ctrl_byte, data_byte);
 	enable_LCD();
 	ks0108_clear();
-
-	set_bit(PORTC, 0);
+	//ks0108_write_char('A', 0, 0);
+	// set_bit(PORTC, 0);
 }
 
 
@@ -68,8 +67,8 @@ void ks0108_write(uint8_t data, uint8_t col, uint8_t page){
 
 	set_data(ctrl_byte);
 	data_byte = data;
-	enable_LCD();
 	serial_com(ctrl_byte, data_byte);
+	enable_LCD();
 
 }
 
@@ -102,13 +101,28 @@ void ks0108_write_char(uint8_t c, uint8_t col, uint8_t page){
 
 }
 
+/*
+ *
+ *
+ */
+
+void ks0108_write_string(char *str, uint8_t col, uint8_t page){
+	uint8_t i = 0;
+
+	while(str[i] != 0){
+		ks0108_write_char(str[i], col, page);
+		col+=6;
+		i++;
+	}
+
+}
+
 
 void serial_com(uint8_t ctrl, uint8_t data){
 
-	uint16_t word = 0xffff;//((uint16_t)data << 8) | ctrl;
-	uint8_t i = 8;
+	uint16_t word = ((uint16_t)ctrl << 8) | data;
+	uint8_t i = 0;
 	do{
-		i--;
 		if(tst_bit(word, i))
 			set_bit(CTRL_PORT, DT);
 		else
@@ -116,7 +130,8 @@ void serial_com(uint8_t ctrl, uint8_t data){
 
 		CLK_pulse();
 
-	}while(i!= 0);
+		i++;
+	}while(i!= 12);
 
 
 	STB_pulse();
