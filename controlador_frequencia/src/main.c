@@ -6,8 +6,8 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-//#include "libs/lcd.h"
 #include "libs/moveServo.h"
+#include "libs/display.h"
 #include "libs/mascaras.h"
 #include "libs/registers.h"
 #include "libs/pressureCtrl.h"
@@ -48,6 +48,7 @@ ISR(PCINT2_vect);
 ISR(PCINT0_vect);
 ISR(USART_RX_vect);
 
+//------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -55,20 +56,20 @@ int main(void)
 {
 	uint8_t txAttribute = 0;		//0 = freqresp, 2 = temperatura, 3 = saturação de O2
 
-	//i2c_initialise();
 	gpioSetup();
 	timerSetup();
 	adcSetup();
 	interruptSetup();
 	usartSetup();
 
-	//OLED_Init();
-	
+	ks0108_init();
+
     while (1){ 
   		
     	if(flagLCD){
   			//changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
-    		
+
+    		screen1(FreqCardiaca, saturacaoO2, temper, (char*)pressure, FreqRespiracao, 10*OCR0A - 120, volumeRespirador, breathMode);
 
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
     		switch(txAttribute){
