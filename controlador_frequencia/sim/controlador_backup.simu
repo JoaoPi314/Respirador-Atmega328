@@ -1,5 +1,9 @@
 <circuit animate="0" Speed_per="100" Simu_Step_nS="1000" type="simulide_0.4" Speed_sps="1000000" noLinAcc="5" reactStep="50">
 
+Unique  Id: Frequencimeter-331: 
+Circuit Id: Frequencimeter-331
+<item valLabRot="0" hflip="1" itemtype="Frequencimeter" vflip="1" boardRot="-1000000" valLabelx="0" id="Frequencimeter-331" mainComp="false" rotation="0" boardPos="-1e+06,-1e+06" labely="-24" Show_id="false" x="-148" circRot="-1" objectName="Frequencimeter-331" valLabely="0" labelx="-32" circPos="0,0" labelrot="0" y="-268"/>
+
 Unique  Id: Node-329: 
 Circuit Id: Node-329
 <item valLabRot="0" hflip="1" itemtype="Node" vflip="1" boardRot="-1000000" valLabelx="0" id="Node-329" mainComp="false" rotation="0" boardPos="-1e+06,-1e+06" labely="-24" Show_id="false" x="60" circRot="2.6494021249151342e-316" objectName="Node-329" valLabely="0" labelx="-16" circPos="0,0" labelrot="0" y="-64"/>
@@ -58,7 +62,7 @@ Circuit Id: atmega328-4
 
 Unique  Id: Clock-13: 
 Circuit Id: Clock-104
-<item valLabRot="0" Always_On="true" hflip="1" itemtype="Clock" vflip="1" Unit=" V" boardRot="-1000000" valLabelx="-11" id="Clock-104" mainComp="false" rotation="0" Freq="1" boardPos="-1e+06,-1e+06" Show_Volt="true" labely="-24" Show_id="false" x="-640" circRot="2.3715151000379834e-322" objectName="Clock-13" valLabely="11" Out="true" labelx="-64" circPos="0,0" labelrot="0" Voltage="5" y="-428"/>
+<item valLabRot="0" Always_On="true" hflip="1" itemtype="Clock" vflip="1" Unit=" V" boardRot="-1000000" valLabelx="-11" id="Clock-104" mainComp="false" rotation="0" Freq="2" boardPos="-1e+06,-1e+06" Show_Volt="true" labely="-24" Show_id="false" x="-640" circRot="2.3715151000379834e-322" objectName="Clock-13" valLabely="11" Out="true" labelx="-64" circPos="0,0" labelrot="0" Voltage="5" y="-428"/>
 
 Unique  Id: TextComponent-14: 
 Circuit Id: TextComponent-97
@@ -102,7 +106,7 @@ Circuit Id: TextComponent-97
 
 Unique  Id: Clock-24: 
 Circuit Id: Clock-105
-<item valLabRot="0" Always_On="true" hflip="1" itemtype="Clock" vflip="1" Unit=" V" boardRot="-1000000" valLabelx="-16" id="Clock-105" mainComp="false" rotation="0" Freq="12500" boardPos="-1e+06,-1e+06" Show_Volt="true" labely="-24" Show_id="false" x="-404" circRot="8.7698673190906173e+62" objectName="Clock-24" valLabely="8" Out="false" labelx="-64" circPos="0,0" labelrot="0" Voltage="5" y="-304"/>
+<item valLabRot="0" Always_On="true" hflip="1" itemtype="Clock" vflip="1" Unit=" V" boardRot="-1000000" valLabelx="-16" id="Clock-105" mainComp="false" rotation="0" Freq="12500" boardPos="-1e+06,-1e+06" Show_Volt="true" labely="-24" Show_id="false" x="-404" circRot="8.7698673190906173e+62" objectName="Clock-24" valLabely="8" Out="true" labelx="-64" circPos="0,0" labelrot="0" Voltage="5" y="-304"/>
 
 Unique  Id: KeyPad-25: 
 Circuit Id: KeyPad-124
@@ -1123,5 +1127,9 @@ Circuit Id: Connector-328
 Unique  Id: Connector-330: 
 Circuit Id: Connector-330
 <item valLabRot="0" hflip="1" startpinid="Node-329-2" itemtype="Connector" vflip="1" boardRot="-1000000" valLabelx="0" id="Connector-330" mainComp="false" rotation="0" boardPos="-1e+06,-1e+06" labely="-24" Show_id="false" x="60" circRot="2.1138371423770966e-307" objectName="Connector-330" valLabely="0" labelx="-16" circPos="0,0" labelrot="0" enodeid="enode-328" pointList="60,-64,60,-36" endpinid="Ground-8-Gnd" y="-64"/>
+
+Unique  Id: Connector-332: 
+Circuit Id: Connector-332
+<item valLabRot="0" hflip="1" startpinid="Frequencimeter-331-lPin" itemtype="Connector" vflip="1" boardRot="-1000000" valLabelx="0" id="Connector-332" mainComp="false" rotation="0" boardPos="-1e+06,-1e+06" labely="-24" Show_id="false" x="-188" circRot="3.1334971307707877e-316" objectName="Connector-332" valLabely="0" labelx="-16" circPos="0,0" labelrot="0" enodeid="enode-332" pointList="-188,-268,-200,-268,-200,-272,-264,-272" endpinid="atmega328-12-PB5" y="-268"/>
  
 </circuit>

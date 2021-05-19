@@ -28,6 +28,7 @@ static volatile char pressure[8] = "       ";		//Pressão arterial
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
 //Flags
+static volatile uint8_t blink = 0;
 static volatile uint8_t breathMode = 0;				// 0 - Forçado; 1 - Assistido
 static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
@@ -68,6 +69,23 @@ int main(void)
   		
     	if(flagLCD){
   			//changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+    		if(requestFromAlert){
+    			cpl_bit(blink, 0);
+    			if(temper < 35.0)
+    				alert(blink, 'T', 0);
+    			else if(temper > 40)
+    				alert(blink, 'T', 1);
+
+    			if(saturacaoO2 < 70){
+    				alert(blink, 'O', 0);
+    			}
+
+    			if(FreqCardiaca < 50){
+    				alert(blink, 'C', 0);
+    			}else if(FreqCardiaca > 140)
+    				alert(blink, 'C', 1);
+
+    		}
 
     		screen1(FreqCardiaca, saturacaoO2, temper, (char*)pressure, FreqRespiracao, 10*OCR0A - 120, volumeRespirador, breathMode);
 
@@ -172,7 +190,7 @@ ISR(ADC_vect){
 	}
 
 	//Alarme para condições críticas de temperatura e saturação de O2
-	if((saturacaoO2 < 60) || (temper < 35) || (temper > 41)){				
+	if((saturacaoO2 < 60) || (temper < 35) || (temper > 40) || (FreqCardiaca < 50) || (FreqCardiaca > 140)){				
 		requestFromAlert = 1;
 		set_bit(PORTB, 6);
 	}
@@ -192,7 +210,7 @@ ISR(ADC_vect){
 ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 
-
+	cpl_bit(PORTB, 5);
 	if(!breathMode)		//No breath mode 0, a respiração é controlada totalmente pelo hardware
 		if((tempo_ms % (60000/(FreqRespiracao*2*volumeRespirador))) == 0){//Caso o tempo atinja 1/(volume*2)do período
 			servoFlag = 1;										//Flag de animação dos LEDs ativa
