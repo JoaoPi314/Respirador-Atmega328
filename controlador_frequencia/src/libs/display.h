@@ -1,15 +1,19 @@
-#ifndef DISPLAY_H
-#define DISPLAY_H
+/*---------------------------------------------------------------------	*
+ * Arquivo: nokiaDisplay.h  											*
+ * Criador: João Pedro Melquiades Gomes      Mat: 118110077				*
+ * Descrição: Arquivo com protótipo da função que controla o que será   *
+ * mostrado no display													*
+ *---------------------------------------------------------------------	*/
+
+
+#ifndef NOKIADISPLAY_H
+#define NOKIADISPLAY_H
 
 #include <avr/io.h>
-#include <stdlib.h>
-#include "ks0108.h"
-#include <string.h>
-
-void screen1(uint32_t card, uint16_t o2, float temp, char* pressure, uint8_t freq, uint8_t o2Valv, uint8_t vol, uint8_t mode);
-void show_vital(uint32_t card, uint16_t o2, float temp, char* pressure);
-void show_params(uint8_t freq, uint8_t o2Valv, uint8_t vol, uint8_t mode);
-void alert(uint8_t blink, uint8_t feature, uint8_t state);
+#include "nokia5110.h"
 
 
-#endif //DISPLAY_H
+
+void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume, uint8_t breathMode);
+
+#endif

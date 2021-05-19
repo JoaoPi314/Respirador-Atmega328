@@ -18,6 +18,9 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
+
+#define trigger() set_bit(PORTD, PD2); _delay_us(10); clr_bit(PORTD, PD2)
 
 void gpioSetup();
 void timerSetup();

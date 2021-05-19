@@ -13,12 +13,12 @@ void gpioSetup(){
 	//GPIO
 	//Definição de direção das portas
 	DDRC |= 0b00000000;
-	DDRB |= 0b01111111;					//Todos os pinos da porta B serão de saída, exceto B0, B6 e B7
-	DDRD |= 0b01100011;					//Aciona os pinos 2, 3 e 4 da porta D como entrada
+	DDRB |= 0b01111110;					//Todos os pinos da porta B serão de saída, exceto B0, B6 e B7
+	DDRD |= 0b01101111;					//Aciona os pinos 2, 3 e 4 da porta D como entrada
 	
 	//Inicialização e pull-ups
-	PORTD |= 0b00001100;				//Aciona o pull-up interno para os pinos 2 e 3 da porta D
-	PORTB |= 0b00000000;				//Inicialmente todas as saídas estão NLB em B. Pull up ativo em B0 e B6
+	PORTD |= 0b00000000;				//Aciona o pull-up interno para os pinos 2 e 3 da porta D
+	PORTB |= 0b00000001;				//Inicialmente todas as saídas estão NLB em B. Pull up ativo em B0 e B6
 }
 
 
@@ -32,6 +32,7 @@ void timerSetup(){
 
 
 	//TC1
+	TCCR1B = (1<<ICES1)|(1<<CS11);
 	//ICR1   = 39999;						//Frequência do PWM em 50Hz nessa configuração 
 	//TCCR1A = 0b10100010;				//Canais OC1A e OC1B com PWM rápido~(TOP = ICR1)
 	//TCCR1B = 0b00011010;				//Prescaler em 1, Comparação com ICR1
@@ -50,8 +51,8 @@ void timerSetup(){
 
 void interruptSetup(){
 	//Interrupções externas
-	EICRA = 0b00001010;					//Interrupções INT1 e INT0 ativadas na borda de descida
-	EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
+	//EICRA = 0b00001010;					//Interrupções INT1 e INT0 ativadas na borda de descida
+	//EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
 	PCICR  = 0b00000101;				//Interrupções por mudança na porta D e B ativadas
 
 	//PCMSK0 = 0b11000001;				//Ativa a interrupção individual do pino PB0, PB6 e PB7
@@ -59,6 +60,7 @@ void interruptSetup(){
 
 	//Timers
 	//TIMSK0 = 0b00000001;
+	TIMSK1 = 1 << ICIE1;
 	TIMSK2 = 0b00000010;				//Habilita interrupção por comparação com OCR0A
 
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
