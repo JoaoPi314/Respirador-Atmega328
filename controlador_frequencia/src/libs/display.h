@@ -12,8 +12,12 @@
 #include <avr/io.h>
 #include "nokia5110.h"
 
+typedef struct{
+	uint8_t hour;
+	uint8_t min;
+	uint8_t seg;
+} time;
 
-
-void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume, uint8_t breathMode);
+void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume, uint8_t breathMode, time exec_time);
 
 #endif

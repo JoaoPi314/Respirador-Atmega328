@@ -13,7 +13,7 @@
  * da frequência de respiração em função do tempo
  */
 
-void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume, uint8_t breathMode){
+void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat, float temp, const char* pressure, uint8_t o2Valv, uint8_t volume, uint8_t breathMode, time exec_time){
     
     nokia_lcd_clear();
 
@@ -26,13 +26,15 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
     char volume_str[3];
     uint16_t temp_int = temp;
     uint8_t temp_dec = temp*10 - temp_int*10;
-
+    char aux[3];
     char mode;
 
     if(!breathMode)
         mode = 'F';
-    else
+    else if(breathMode == 1)
         mode = 'A';
+    else
+    	mode = 'S';
 
     for(uint8_t i = 0; i < 84; i++)
         nokia_lcd_set_pixel(i, 9, 1);
@@ -119,6 +121,18 @@ void changeDisplayConfig(uint8_t sel, uint8_t freq, uint32_t card, uint16_t sat,
             nokia_lcd_write_char(mode, 3);
 
             break;
+
+       	case 2:
+       		nokia_lcd_clear();
+       		nokia_lcd_set_cursor(12, 16);
+       		itoa(exec_time.hour, aux, 10);
+       		nokia_lcd_write_string(aux, 2);
+       		nokia_lcd_write_char(':', 2);
+    		itoa(exec_time.min, aux, 10);
+       		nokia_lcd_write_string(aux, 2);
+       		nokia_lcd_write_char(':', 2);
+       		itoa(exec_time.seg, aux, 10);
+       		nokia_lcd_write_string(aux, 2);
     }
     
     nokia_lcd_render();

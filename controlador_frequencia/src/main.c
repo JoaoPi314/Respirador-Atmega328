@@ -28,8 +28,10 @@ static volatile char pressure[8] = "       ";		//Pressão arterial
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
 //Flags
+static volatile uint8_t diafrag = 0;
+static volatile uint8_t timeOut = 0;
 static volatile uint8_t enable = 0;
-static volatile uint8_t blink = 0;
+static volatile uint8_t segFlag = 0;
 static volatile uint8_t breathMode = 0;				// 0 - Forçado; 1 - Assistido
 static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
@@ -38,7 +40,7 @@ static volatile uint8_t requestFromAlert = 0;		//Flag que indica que o buzzer es
 
 static volatile char errorMSG[8] = "ERRO!  ";
 
-
+static time total;
 
 
 //Interrupções
@@ -52,7 +54,7 @@ ISR(TIMER1_CAPT_vect);
 ISR(PCINT0_vect);
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
-
+void cronometer();
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
 int main(void)
@@ -72,27 +74,8 @@ int main(void)
     while (1){ 
   		
     	if(flagLCD){
-  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode);//Plota o gráfico da frequência x tempo e indica a frequência atual	
-    		// if(requestFromAlert){
-    		// 	cpl_bit(blink, 0);
-    		// 	if(temper < 35.0)
-    		// 		alert(blink, 'T', 0);
-    		// 	else if(temper > 40)
-    		// 		alert(blink, 'T', 1);
-
-    		// 	if(saturacaoO2 < 70){
-    		// 		alert(blink, 'O', 0);
-    		// 	}
-
-    		// 	if(FreqCardiaca < 50){
-    		// 		alert(blink, 'C', 0);
-    		// 	}else if(FreqCardiaca > 140)
-    		// 		alert(blink, 'C', 1);
-
-    		// }
-
-    		// screen1(FreqCardiaca, saturacaoO2, temper, (char*)pressure, FreqRespiracao, 10*OCR0A - 120, volumeRespirador, breathMode);
-
+  			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode, total);//Plota o gráfico da frequência x tempo e indica a frequência atual	
+    		
     		//A cada 200ms, um dos 5 dados é enviado para o LCD
     		switch(txAttribute){
 			case 0:
@@ -126,20 +109,20 @@ int main(void)
 
     	}
     	if(enable){
-	    	if(servoFlag && !breathMode){		//Só entra caso esteja no modo forçado
-	    		OCR0B = moveServo(FreqRespiracao, volumeRespirador);				//Chama rotina que move o servo
-				servoFlag = 0;
-				if(!requestFromAlert){
-					if(OCR0B < 13){
-						set_bit(PORTB, 6);
-					}
-					else{
-						clr_bit(PORTB, 6);
-					}
+			if(!requestFromAlert){
+				if(OCR0B < 13){
+					set_bit(PORTB, 6);
+				}
+				else{
+					clr_bit(PORTB, 6);
 				}
 			}
-		}
-    
+	    	if(servoFlag){		//Só entra caso esteja no modo forçado
+	    		OCR0B = moveServo(volumeRespirador);				//Chama rotina que move o servo
+				servoFlag = 0;
+			}
+			
+    	}
 	}
 }
 
@@ -158,13 +141,20 @@ ISR(ADC_vect){
 	else if(!tst_bit(ADMUX, 2) && tst_bit(ADMUX, 1) && !tst_bit(ADMUX, 0)){			//Caso o canal 2 esteja sendo a fonte de interrupção
 		switch(ADC){
 			case 168:	//Seleção de tela
-				if(displayConfigFlag < 1)		//Vai alterando o display a cada aperto, varia de 0 a 2
+				if(displayConfigFlag < 2)		//Vai alterando o display a cada aperto, varia de 0 a 2
 					displayConfigFlag++;
 				else
 					displayConfigFlag = 0;
 				break;
 			case 157:	//Muda modo
-				cpl_bit(breathMode, 0);
+				if(breathMode < 2)
+					breathMode++;
+				else
+					breathMode = 0;
+					if(breathMode != 1)
+						diafrag = 0;
+					else
+						diafrag = 1;
 				break;
 			case 960:	// Diminui freq. resp
 				if(FreqRespiracao > 5)
@@ -198,8 +188,6 @@ ISR(ADC_vect){
 	//Alarme para condições críticas de temperatura e saturação de O2
 	if((saturacaoO2 < 60) || (temper < 35) || (temper > 40) || (FreqCardiaca < 50) || (FreqCardiaca > 140)){				
 		requestFromAlert = 1;
-		if(!(tempo_ms % 300))
-			cpl_bit(PORTD, 3);
 		set_bit(PORTB, 6);
 	}
 	else{
@@ -218,7 +206,7 @@ ISR(ADC_vect){
 ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	tempo_ms++;					//Conta o tempo após 1ms
 
-	if(!breathMode)		//No breath mode 0, a respiração é controlada totalmente pelo hardware
+	if(!breathMode || !diafrag)		//No breath mode 0, a respiração é controlada totalmente pelo hardware
 		if((tempo_ms % (60000/(FreqRespiracao*2*volumeRespirador))) == 0){//Caso o tempo atinja 1/(volume*2)do período
 			servoFlag = 1;										//Flag de animação dos LEDs ativa
 		}
@@ -234,6 +222,9 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 	if(!(tempo_ms % 100)){
 		trigger();
 	}
+
+	if(!(tempo_ms % 1000))
+		cronometer();
 
 }
 
@@ -295,17 +286,39 @@ ISR(TIMER1_CAPT_vect){
 	}
 	else{
 		enable = 0;
+		clr_bit(PORTB, 6);
 	}
 
 }
 
 ISR(PCINT0_vect){
-	cpl_bit(PORTD, 3);
-	if(breathMode == 1){
+
+
+
+	if(breathMode == 1 || diafrag){
 		if(tst_bit(PINB, 7)){
-			OCR0B = 12 + volumeRespirador;	
+			OCR0B = 12 + volumeRespirador;
+			diafrag = 1;
 		}else if(!tst_bit(PINB, 7)){
 			OCR0B = 12;
 		}
+	}else if(breathMode == 2){
+		if(tst_bit(PINB, 7)){
+			diafrag = 1;
+		}
 	}
+}
+
+void cronometer(){
+
+	total.seg++;
+	if(total.seg == 60){
+		total.seg = 0;
+		total.min++;
+	}
+	if(total.min == 60){
+		total.hour++;
+		total.min = 0;
+	}
+
 }
