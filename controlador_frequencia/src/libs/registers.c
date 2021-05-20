@@ -55,7 +55,7 @@ void interruptSetup(){
 	//EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
 	PCICR  = 0b00000101;				//Interrupções por mudança na porta D e B ativadas
 
-	//PCMSK0 = 0b11000001;				//Ativa a interrupção individual do pino PB0, PB6 e PB7
+	PCMSK0 = 0b10000000;				//Ativa a interrupção individual do pino PB7
 	PCMSK2 = 0b10000000;				//Ativa a interrupção individual do pino PD7
 
 	//Timers

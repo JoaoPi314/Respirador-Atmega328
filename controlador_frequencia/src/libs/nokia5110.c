@@ -160,7 +160,7 @@ void nokia_lcd_set_pixel(uint8_t x, uint8_t y, uint8_t value)
 		*byte &= ~(1 << (y %8 ));
 }
 
-void nokia_lcd_write_char(char code, uint8_t scale)
+void nokia_lcd_write_char(uint8_t code, uint8_t scale)
 {
 	register uint8_t x, y;
 

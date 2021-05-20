@@ -47,9 +47,9 @@ ISR(TIMER2_COMPA_vect);
 ISR(INT0_vect);
 ISR(INT1_vect);
 ISR(PCINT2_vect);
-ISR(PCINT0_vect);
 ISR(USART_RX_vect);
 ISR(TIMER1_CAPT_vect);
+ISR(PCINT0_vect);
 
 //------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -158,7 +158,7 @@ ISR(ADC_vect){
 	else if(!tst_bit(ADMUX, 2) && tst_bit(ADMUX, 1) && !tst_bit(ADMUX, 0)){			//Caso o canal 2 esteja sendo a fonte de interrupção
 		switch(ADC){
 			case 168:	//Seleção de tela
-				if(displayConfigFlag < 3)		//Vai alterando o display a cada aperto, varia de 0 a 2
+				if(displayConfigFlag < 1)		//Vai alterando o display a cada aperto, varia de 0 a 2
 					displayConfigFlag++;
 				else
 					displayConfigFlag = 0;
@@ -297,4 +297,15 @@ ISR(TIMER1_CAPT_vect){
 		enable = 0;
 	}
 
+}
+
+ISR(PCINT0_vect){
+	cpl_bit(PORTD, 3);
+	if(breathMode == 1){
+		if(tst_bit(PINB, 7)){
+			OCR0B = 12 + volumeRespirador;	
+		}else if(!tst_bit(PINB, 7)){
+			OCR0B = 12;
+		}
+	}
 }

@@ -65,7 +65,7 @@ void nokia_lcd_set_pixel(uint8_t x, uint8_t y, uint8_t value);
  * @code: char code
  * @scale: size of char
  */
-void nokia_lcd_write_char(char code, uint8_t scale);
+void nokia_lcd_write_char(uint8_t code, uint8_t scale);
 
 /**
  * Draw string. Example: writeString("abc",3);
