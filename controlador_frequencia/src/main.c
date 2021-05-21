@@ -28,10 +28,9 @@ static volatile char pressure[8] = "       ";		//Pressão arterial
 static volatile uint32_t tempo_ms = 0;				//Contador de tempo do programa
 
 //Flags
-static volatile uint8_t diafrag = 0;
-static volatile uint8_t timeOut = 0;
-static volatile uint8_t enable = 0;
-static volatile uint8_t segFlag = 0;
+static volatile uint8_t diafrag = 0;				//Flag que indica se houve movimento no diafragma
+static volatile uint8_t enable = 0;					//Flag que habilita o servo para respiração
+static volatile uint8_t segFlag = 0;				//Flag que conta os segundos
 static volatile uint8_t breathMode = 0;				// 0 - Forçado; 1 - Assistido
 static volatile uint8_t servoFlag = 0;				//Flag para habilitar animação dos LEDs
 static volatile uint8_t flagLCD = 0;				//Flag para mostrar valores no LCD
@@ -40,7 +39,7 @@ static volatile uint8_t requestFromAlert = 0;		//Flag que indica que o buzzer es
 
 static volatile char errorMSG[8] = "ERRO!  ";
 
-static time total;
+static time total;									//Tempo total de funcionamento do respirador
 
 
 //Interrupções
@@ -69,10 +68,8 @@ int main(void)
 
 	nokia_lcd_init();
 	nokia_lcd_clear();
-	//ks0108_init();
-
     while (1){ 
-  		
+
     	if(flagLCD){
   			changeDisplayConfig(displayConfigFlag, FreqRespiracao, FreqCardiaca, saturacaoO2, temper, (const char *)pressure, 10*OCR0A - 120, volumeRespirador, breathMode, total);//Plota o gráfico da frequência x tempo e indica a frequência atual	
     		
@@ -108,7 +105,7 @@ int main(void)
     		flagLCD = 0;
 
     	}
-    	if(enable){
+    	if(enable){			//Só movimenta o servo caso esteja a menos que 5cm do sonar
 			if(!requestFromAlert){
 				if(OCR0B < 13){
 					set_bit(PORTB, 6);
@@ -117,7 +114,7 @@ int main(void)
 					clr_bit(PORTB, 6);
 				}
 			}
-	    	if(servoFlag){		//Só entra caso esteja no modo forçado
+	    	if(servoFlag){		//Só entra caso esteja no modo forçado ou sem movimentação no digragma (modo Smart)
 	    		OCR0B = moveServo(volumeRespirador);				//Chama rotina que move o servo
 				servoFlag = 0;
 			}
@@ -190,8 +187,8 @@ ISR(ADC_vect){
 		requestFromAlert = 1;
 		set_bit(PORTB, 6);
 	}
-	else{
-		//clr_bit(PORTD, 6);
+	else if(requestFromAlert){
+		clr_bit(PORTB, 6);
 		requestFromAlert = 0;
 	}
 
@@ -211,7 +208,7 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 			servoFlag = 1;										//Flag de animação dos LEDs ativa
 		}
 
-	if(!(tempo_ms % 50)){					//A cada 150ms o ADC é habilitado		
+	if(!(tempo_ms % 50)){					//A cada 50ms o ADC é habilitado		
 		set_bit(ADCSRA, 3);					//ADC interrupt habilitado
 	}
 
@@ -219,11 +216,11 @@ ISR(TIMER2_COMPA_vect){			//Interrupção por overflow do TC0
 		flagLCD = 1;
 	}
 
-	if(!(tempo_ms % 100)){
+	if(!(tempo_ms % 100)){					//A cada 100ms, o sonar faz uma medição de distância
 		trigger();
 	}
 
-	if(!(tempo_ms % 1000))
+	if(!(tempo_ms % 1000))					//Conta q segundo no cronômetro
 		cronometer();
 
 }
@@ -270,47 +267,47 @@ ISR(USART_RX_vect){
 }
 ISR(TIMER1_CAPT_vect){
 
-	static uint32_t start;
-	static uint32_t distance = 20;
+	static uint32_t start;			//Tempo inicial da medição
+	static uint32_t distance = 20;	//tempo final da medição
 
-	cpl_bit(TCCR1B, ICES1);
+	cpl_bit(TCCR1B, ICES1);			//Após uma medição no posedge,a próxima é no negedge
 
-	if(!tst_bit(TCCR1B, ICES1))
+	if(!tst_bit(TCCR1B, ICES1))		//Se a captura foi em um posedge
 		start = ICR1;
-	else if(ICR1 > start){
+	else if(ICR1 > start){			//caso a segunda medição seja maior que a primeira, calcule o período (Evita overflow)
 		distance = (ICR1 - start)/116;
 	}
 
-	if(distance < 5){
+	if((distance < 5) && (distance > 0)){	//Ativa o servo se a distância for menor que 5cm
 		enable = 1;
 	}
 	else{
 		enable = 0;
-		clr_bit(PORTB, 6);
+		clr_bit(PORTB, 6);					//Caso o alarme esteja ativo, desativa se o enable desligar
 	}
 
 }
 
 ISR(PCINT0_vect){
-
-
-
-	if(breathMode == 1 || diafrag){
-		if(tst_bit(PINB, 7)){
-			OCR0B = 12 + volumeRespirador;
-			diafrag = 1;
-		}else if(!tst_bit(PINB, 7)){
-			OCR0B = 12;
-		}
-	}else if(breathMode == 2){
-		if(tst_bit(PINB, 7)){
-			diafrag = 1;
+	if(enable){				//Só move o servo caso sonar esteja a menos de 5cm 
+		if(breathMode == 1 || diafrag){			//Caso modo assistido ou haja movimento no diafragma no modo smart
+			if(tst_bit(PINB, 7)){				
+				OCR0B = 12 + volumeRespirador;
+				diafrag = 1;
+			}else if(!tst_bit(PINB, 7)){
+				OCR0B = 12;
+			}
+		}else if(breathMode == 2){				//Se o modo for smart e houve movimento no diafragma
+			if(tst_bit(PINB, 7)){
+				diafrag = 1;
+			}
 		}
 	}
 }
 
 void cronometer(){
 
+	//Lógica simples para contar segundos
 	total.seg++;
 	if(total.seg == 60){
 		total.seg = 0;

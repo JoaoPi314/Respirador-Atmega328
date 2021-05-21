@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------	*
- * Arquivo: nokiaDisplay.h  											*
+ * Arquivo: display.h  													*
  * Criador: João Pedro Melquiades Gomes      Mat: 118110077				*
  * Descrição: Arquivo com protótipo da função que controla o que será   *
  * mostrado no display													*
@@ -12,6 +12,7 @@
 #include <avr/io.h>
 #include "nokia5110.h"
 
+//Struct que armazenará o tempo do cronômetro
 typedef struct{
 	uint8_t hour;
 	uint8_t min;

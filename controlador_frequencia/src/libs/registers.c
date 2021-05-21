@@ -32,35 +32,25 @@ void timerSetup(){
 
 
 	//TC1
-	TCCR1B = (1<<ICES1)|(1<<CS11);
-	//ICR1   = 39999;						//Frequência do PWM em 50Hz nessa configuração 
-	//TCCR1A = 0b10100010;				//Canais OC1A e OC1B com PWM rápido~(TOP = ICR1)
-	//TCCR1B = 0b00011010;				//Prescaler em 1, Comparação com ICR1
-	//OCR1A  = 2000;
-	//OCR1B  = 2000;
-
+	TCCR1B = (1<<ICES1)|(1<<CS11);	//Habilita modo captura do timer 1
 
 	//TC0
 	TCCR0A = 0b10100011;			//Modo PWM rápido
-	TCCR0B = 0b00000111;			//Clock externo em T0
+	TCCR0B = 0b00000111;			//Clock externo em T0 (12.8kHz gera uma frequência PWM de 50Hz)
 	OCR0A = 12;
 	OCR0B = 12;
-	//TCCR0B = 0b00000111;	
 }	
 
 
 void interruptSetup(){
 	//Interrupções externas
-	//EICRA = 0b00001010;					//Interrupções INT1 e INT0 ativadas na borda de descida
-	//EIMSK =	0b00000011;					//Ativa as interrupções INT1 e INT0
 	PCICR  = 0b00000101;				//Interrupções por mudança na porta D e B ativadas
 
 	PCMSK0 = 0b10000000;				//Ativa a interrupção individual do pino PB7
 	PCMSK2 = 0b10000000;				//Ativa a interrupção individual do pino PD7
 
 	//Timers
-	//TIMSK0 = 0b00000001;
-	TIMSK1 = 1 << ICIE1;
+	TIMSK1 = 1 << ICIE1;				//Habilita interrupção por captura em TC1
 	TIMSK2 = 0b00000010;				//Habilita interrupção por comparação com OCR0A
 
 	sei();								//Bit SREG em 1 - Interrupções globais ativadas
